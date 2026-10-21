@@ -78,10 +78,13 @@ func (e *Engine) Compose(ctx context.Context, action engine.ComposeAction, opts 
 
 	cmdErr := cmd.Wait()
 	_ = writer.Close()
-	<-scanDone
+	scanErr := <-scanDone
 
 	if cmdErr != nil {
 		return fmt.Errorf("compose %s failed: %w", action, cmdErr)
+	}
+	if scanErr != nil {
+		return fmt.Errorf("compose %s stream: %w", action, scanErr)
 	}
 	return nil
 }

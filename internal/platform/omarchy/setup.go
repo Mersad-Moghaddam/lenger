@@ -104,7 +104,7 @@ func Setup(apply bool) string {
 
 	sb.WriteString("Add this line to your Hyprland bindings configuration:\n")
 	if configFile != "" {
-		sb.WriteString(fmt.Sprintf("File: %s\n\n", configFile))
+		fmt.Fprintf(&sb, "File: %s\n\n", configFile)
 	} else {
 		sb.WriteString("File: ~/.config/hypr/bindings.conf\n\n")
 	}
