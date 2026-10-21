@@ -51,6 +51,10 @@ func Classify(err error) *ClassifiedError {
 		category, message, next = "in-use", "The resource is still in use.", "Stop or remove the dependent resource first."
 	case strings.Contains(text, "is not running"), strings.Contains(text, "container is paused"):
 		category, message, next = "state", "The container is not in a state that allows this action.", "Refresh the list and choose an action valid for its current state."
+	case strings.Contains(text, "denied: requested access to the resource is denied"), strings.Contains(text, "push access denied"):
+		category, message, next = "auth", "Push access denied for this repository.", "Use 'docker login' with an account that has push permission."
+	case strings.Contains(text, "no such file or directory"), strings.Contains(text, "archive/tar:"):
+		category, message, next = "filesystem", "The tar archive path could not be found or opened.", "Check the destination directory or input archive path."
 	case strings.Contains(text, "429"), strings.Contains(text, "toomanyrequests"), strings.Contains(text, "rate limit"):
 		category, message, next = "rate-limit", "The registry rate limit was reached.", "Wait before retrying or use docker login."
 	case strings.Contains(text, "unauthorized"), strings.Contains(text, "authentication required"), strings.Contains(text, "401"):

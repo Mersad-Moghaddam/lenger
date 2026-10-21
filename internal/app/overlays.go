@@ -381,3 +381,134 @@ func (m *Model) removeNetworkOverlay() string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+func (m *Model) tagImageOverlay() string {
+	s := m.sheet
+	target := strings.TrimSpace(m.input.Value())
+	if target == "" {
+		target = "<target-tag>"
+	}
+	source := m.tagSourceImage
+	if source == "" {
+		source = m.tagSourceID
+	}
+	cmd := fmt.Sprintf("docker tag %s %s", source, target)
+	lines := []string{
+		s.Heading("SOURCE IMAGE"),
+		"  " + style.Clean(source),
+		"",
+		s.Heading("NEW TAG REFERENCE"),
+		"  " + m.input.View(),
+		"",
+		s.Heading("COMMAND EQUIVALENT"),
+		"  " + s.Text(cmd, s.Palette.Accent),
+		"",
+		"enter tag   esc cancel",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) pushImageOverlay() string {
+	s := m.sheet
+	lines := []string{
+		s.Heading("PUSH IMAGE TO REGISTRY"),
+		"  " + style.Clean(m.pushImageRef),
+		"",
+	}
+	if m.pushBusy {
+		lines = append(lines, s.Muted("Pushing layers to remote registry…"), "")
+		for _, p := range m.pushProgress {
+			if p.Status != "" {
+				layerStr := p.ID
+				if layerStr != "" {
+					layerStr = fmt.Sprintf("%-12s ", layerStr)
+				}
+				detail := ""
+				if p.Total > 0 {
+					pct := float64(p.Current) / float64(p.Total) * 100
+					detail = fmt.Sprintf(" %s/%s (%.0f%%)", components.Bytes(p.Current), components.Bytes(p.Total), pct)
+				}
+				lines = append(lines, fmt.Sprintf("  %s%s%s", layerStr, p.Status, detail))
+			}
+		}
+		lines = append(lines, "")
+	}
+	if m.pushErr != "" {
+		lines = append(lines, s.Text("Push error: "+style.Clean(m.pushErr), s.Palette.Danger), "")
+	}
+	lines = append(lines,
+		s.Heading("COMMAND EQUIVALENT"),
+		"  "+s.Text("docker push "+m.pushImageRef, s.Palette.Accent),
+		"",
+		"esc close",
+	)
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) exportImageOverlay() string {
+	s := m.sheet
+	dest := strings.TrimSpace(m.input.Value())
+	if dest == "" {
+		dest = "<archive.tar>"
+	}
+	cmd := fmt.Sprintf("docker save -o %s %s", dest, m.exportImageID)
+	lines := []string{
+		s.Heading("EXPORT IMAGE ARCHIVE"),
+		"  " + style.Clean(m.exportImageID),
+		"",
+		s.Heading("DESTINATION TARBALL PATH"),
+		"  " + m.input.View(),
+		"",
+		s.Heading("COMMAND EQUIVALENT"),
+		"  " + s.Text(cmd, s.Palette.Accent),
+		"",
+		"enter export   esc cancel",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) importImageOverlay() string {
+	s := m.sheet
+	src := strings.TrimSpace(m.input.Value())
+	if src == "" {
+		src = "<archive.tar>"
+	}
+	cmd := fmt.Sprintf("docker load -i %s", src)
+	lines := []string{
+		s.Heading("IMPORT IMAGE ARCHIVE"),
+		"",
+		s.Heading("SOURCE TARBALL PATH"),
+		"  " + m.input.View(),
+		"",
+		s.Heading("COMMAND EQUIVALENT"),
+		"  " + s.Text(cmd, s.Palette.Accent),
+		"",
+		"enter import   esc cancel",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) daemonMirrorsOverlay() string {
+	s := m.sheet
+	lines := []string{
+		s.Heading("DAEMON REGISTRY MIRRORS CONFIGURATION (/etc/docker/daemon.json)"),
+		"",
+	}
+	if m.mirrorDiffText != "" {
+		lines = append(lines, s.Heading("PROPOSED CONFIG DIFF"), m.mirrorDiffText, "")
+	}
+	if m.mirrorSudoCmd != "" {
+		lines = append(lines,
+			s.Heading("SHELL COMMAND TO APPLY"),
+			"  "+s.Text(m.mirrorSudoCmd, s.Palette.Accent),
+			"",
+		)
+	}
+	lines = append(lines,
+		s.Muted("Lenger does not overwrite /etc/docker/daemon.json without root confirmation."),
+		s.Muted("Execute the command above, then reload the Docker daemon."),
+		"",
+		"esc close",
+	)
+	return strings.Join(lines, "\n")
+}

@@ -38,6 +38,14 @@ func actions() []action {
 		{"Compose Restart", "compose-restart", "docker compose restart"},
 		{"Create Network", "create-net", "docker network create"},
 		{"Smart cleanup", "cleanup", "docker system df"},
+		{"Registry search", "S", "docker search <term>"},
+		{"Check image update", "U", "check remote manifest digest"},
+		{"Tag image", "t", "docker tag <source> <target>"},
+		{"Push image", "P", "docker push <ref>"},
+		{"Export tarball", "E", "docker save -o <file> <image>"},
+		{"Import tarball", "I", "docker load -i <file>"},
+		{"Scan vulnerabilities", "V", "trivy / grype / docker scout"},
+		{"Daemon mirrors diff", "M", "configure /etc/docker/daemon.json registry-mirrors"},
 		{"Filter list", "/", "filter current resources"},
 		{"Refresh resources", "R", "docker ps -a; docker image ls; docker volume ls"},
 		{"Job history", "J", ""},
@@ -320,6 +328,36 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			return m.openCreateNetwork()
 		}
 		return m.openCleanup()
+	case "S":
+		return m.openRegistrySearch()
+	case "U":
+		if m.tab == 1 {
+			return m.checkSelectedImageUpdate()
+		}
+	case "t":
+		if m.tab == 1 {
+			return m.openTagImage()
+		}
+	case "P":
+		if m.tab == 1 {
+			return m.openPushImage()
+		}
+	case "E":
+		if m.tab == 1 {
+			return m.openExportImage()
+		}
+	case "I":
+		if m.tab == 1 {
+			return m.openImportImage()
+		}
+	case "V":
+		if m.tab == 1 {
+			return m.scanSelectedImage()
+		}
+	case "M":
+		if m.tab == 1 || m.tab == 6 {
+			return m.showDaemonMirrors()
+		}
 	}
 	return nil
 }
@@ -656,6 +694,106 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		if k == "enter" {
 			return m.runExec()
+		}
+		return nil
+	case "registry-search":
+		if k == "esc" {
+			if m.registryBrowsingTags {
+				m.registryBrowsingTags = false
+				return nil
+			}
+			m.closeOverlay()
+			return nil
+		}
+		if k == "down" || k == "j" {
+			if m.registryBrowsingTags {
+				if len(m.registryTags) > 0 {
+					m.registryTagCursor = min(len(m.registryTags)-1, m.registryTagCursor+1)
+				}
+			} else {
+				if len(m.registryResults) > 0 {
+					m.registryCursor = min(len(m.registryResults)-1, m.registryCursor+1)
+				}
+			}
+			return nil
+		}
+		if k == "up" || k == "k" {
+			if m.registryBrowsingTags {
+				m.registryTagCursor = max(0, m.registryTagCursor-1)
+			} else {
+				m.registryCursor = max(0, m.registryCursor-1)
+			}
+			return nil
+		}
+		if k == "t" && !m.registryBrowsingTags && len(m.registryResults) > 0 {
+			repo := m.registryResults[m.registryCursor].Name
+			return m.fetchRemoteTags(repo)
+		}
+		if k == "enter" {
+			if m.registryBrowsingTags && len(m.registryTags) > 0 {
+				repo := m.registryResults[m.registryCursor].Name
+				tag := m.registryTags[m.registryTagCursor].Name
+				ref := repo + ":" + tag
+				m.closeOverlay()
+				return m.startPull(ref)
+			}
+			if len(m.registryResults) > 0 && strings.TrimSpace(m.input.Value()) == m.registryQuery {
+				repo := m.registryResults[m.registryCursor].Name
+				m.closeOverlay()
+				return m.startPull(repo + ":latest")
+			}
+			m.registryQuery = strings.TrimSpace(m.input.Value())
+			return m.executeRegistrySearch(m.input.Value())
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
+	case "tag-image":
+		if k == "enter" {
+			return m.submitTagImage()
+		}
+		if k == "esc" {
+			m.closeOverlay()
+			return nil
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
+	case "push-image":
+		if k == "esc" || k == "q" {
+			m.closeOverlay()
+			return nil
+		}
+		return nil
+	case "export-image":
+		if k == "enter" {
+			return m.submitExportImage()
+		}
+		if k == "esc" {
+			m.closeOverlay()
+			return nil
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
+	case "import-image":
+		if k == "enter" {
+			return m.submitImportImage()
+		}
+		if k == "esc" {
+			m.closeOverlay()
+			return nil
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
+	case "daemon-mirrors":
+		if k == "esc" || k == "q" {
+			m.closeOverlay()
+			return nil
+		}
+		if k == "y" && m.mirrorSudoCmd != "" {
+			return tea.Batch(tea.SetClipboard(m.mirrorSudoCmd), m.notify("Copied mirror config command."))
 		}
 		return nil
 	}

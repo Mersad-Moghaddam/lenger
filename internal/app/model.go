@@ -107,6 +107,52 @@ type networkRemovedMsg struct {
 	err error
 }
 
+type registrySearchMsg struct {
+	query   string
+	results []engine.RegistrySearchResult
+	err     error
+}
+type remoteTagsMsg struct {
+	repo string
+	tags []engine.RemoteTag
+	err  error
+}
+type imageUpdateMsg struct {
+	id     string
+	status engine.ImageUpdateStatus
+	err    error
+}
+type vulnScanMsg struct {
+	id     string
+	report engine.VulnerabilityReport
+	err    error
+}
+type pushProgressMsg struct {
+	progress engine.Progress
+}
+type pushDoneMsg struct {
+	ref string
+	err error
+}
+type imageTaggedMsg struct {
+	sourceID  string
+	targetRef string
+	err       error
+}
+type imageSavedMsg struct {
+	path string
+	err  error
+}
+type imageLoadedMsg struct {
+	path string
+	err  error
+}
+type daemonMirrorsMsg struct {
+	diff      string
+	newConfig string
+	err       error
+}
+
 // Model contains session-local state; pointer ownership stays on the model thread.
 type Model struct {
 	// Dependencies and lifetime are fixed at construction.
@@ -224,6 +270,30 @@ type Model struct {
 	removeVolume    string
 	execContainer   string
 	execShell       int
+
+	// Registry search & tag browser state (IMG-06)
+	registryQuery        string
+	registryResults      []engine.RegistrySearchResult
+	registryCursor       int
+	registryTags         []engine.RemoteTag
+	registryTagCursor    int
+	registrySearching    bool
+	registryBrowsingTags bool
+	registryErr          string
+
+	// Tag, Push, Save, Load state (IMG-08)
+	tagSourceID    string
+	tagSourceImage string
+	pushImageRef   string
+	pushProgress   []engine.Progress
+	pushBusy       bool
+	pushErr        string
+	exportImageID  string
+
+	// Daemon mirrors diff state (REG-02, REG-03)
+	mirrorDiffText  string
+	mirrorNewConfig string
+	mirrorSudoCmd   string
 }
 
 // New creates a model without performing I/O or scheduling animation.
@@ -497,6 +567,91 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.inspections[msg.id] = msg.data
 		return m, nil
+	case registrySearchMsg:
+		m.registrySearching = false
+		if msg.err != nil {
+			m.registryErr = engine.Classify(msg.err).Message
+		} else {
+			m.registryResults = msg.results
+			m.registryCursor = 0
+			m.registryErr = ""
+		}
+		return m, nil
+	case remoteTagsMsg:
+		m.registrySearching = false
+		if msg.err != nil {
+			m.registryErr = engine.Classify(msg.err).Message
+		} else {
+			m.registryTags = msg.tags
+			m.registryTagCursor = 0
+			m.registryBrowsingTags = true
+		}
+		return m, nil
+	case imageUpdateMsg:
+		if msg.err != nil {
+			return m, m.notify("Update check failed: " + engine.Classify(msg.err).Message)
+		}
+		ins := m.inspections[msg.id]
+		ins.UpdateStatus = &msg.status
+		m.inspections[msg.id] = ins
+		notice := fmt.Sprintf("%s is up to date.", msg.status.Ref)
+		if msg.status.HasUpdate {
+			notice = fmt.Sprintf("Update available for %s!", msg.status.Ref)
+		}
+		return m, m.notify(notice)
+	case vulnScanMsg:
+		if msg.err != nil {
+			return m, m.notify("Scan failed: " + engine.Classify(msg.err).Message)
+		}
+		ins := m.inspections[msg.id]
+		ins.Vulnerabilities = &msg.report
+		m.inspections[msg.id] = ins
+		notice := fmt.Sprintf("Scan completed (%s): %d Critical, %d High", msg.report.Scanner, msg.report.Critical, msg.report.High)
+		if msg.report.Error != "" {
+			notice = "Scan notice: " + msg.report.Error
+		}
+		return m, m.notify(notice)
+	case pushProgressMsg:
+		m.pushProgress = append(m.pushProgress, msg.progress)
+		if len(m.pushProgress) > 30 {
+			m.pushProgress = m.pushProgress[len(m.pushProgress)-30:]
+		}
+		return m, nil
+	case pushDoneMsg:
+		m.pushBusy = false
+		if msg.err != nil {
+			m.pushErr = engine.Classify(msg.err).Message
+			return m, nil
+		}
+		m.closeOverlay()
+		return m, m.notify("Push completed successfully: " + msg.ref)
+	case imageTaggedMsg:
+		if msg.err != nil {
+			return m, m.notify("Tag failed: " + engine.Classify(msg.err).Message)
+		}
+		m.closeOverlay()
+		return m, tea.Batch(m.notify("Tagged: "+msg.targetRef), m.refresh())
+	case imageSavedMsg:
+		if msg.err != nil {
+			return m, m.notify("Export failed: " + engine.Classify(msg.err).Message)
+		}
+		m.closeOverlay()
+		return m, m.notify("Image exported to " + msg.path)
+	case imageLoadedMsg:
+		if msg.err != nil {
+			return m, m.notify("Import failed: " + engine.Classify(msg.err).Message)
+		}
+		m.closeOverlay()
+		return m, tea.Batch(m.notify("Image imported from "+msg.path), m.refresh())
+	case daemonMirrorsMsg:
+		if msg.err != nil {
+			return m, m.notify("Daemon diff failed: " + engine.Classify(msg.err).Message)
+		}
+		m.mirrorDiffText = msg.diff
+		m.mirrorNewConfig = msg.newConfig
+		m.mirrorSudoCmd = fmt.Sprintf("echo %q | sudo tee /etc/docker/daemon.json && sudo systemctl reload docker", msg.newConfig)
+		m.overlay = "daemon-mirrors"
+		return m, nil
 	case removedMsg:
 		failures := 0
 		for id, err := range msg {
@@ -767,6 +922,22 @@ func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspectio
 	m.fixture = true
 	m.clock = time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC)
 	if inspection != nil {
+		inspection.UpdateStatus = &engine.ImageUpdateStatus{
+			Ref:          batch.Images[0].Name(),
+			LocalDigest:  "sha256:local",
+			RemoteDigest: "sha256:remote-newer",
+			HasUpdate:    true,
+			CheckedAt:    m.clock,
+		}
+		inspection.Vulnerabilities = &engine.VulnerabilityReport{
+			Scanner:   "trivy",
+			Critical:  1,
+			High:      3,
+			Medium:    7,
+			Low:       12,
+			Fixable:   4,
+			ScannedAt: m.clock,
+		}
 		m.inspections[inspection.ID] = *inspection
 	}
 	m.usage = galleryUsage(batch)
@@ -840,6 +1011,36 @@ func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspectio
 				break
 			}
 		}
+	case "registry-search":
+		m.registryQuery = "nginx"
+		m.registryResults = []engine.RegistrySearchResult{
+			{Name: "nginx", Description: "Official build of Nginx.", Stars: 20100, Official: true},
+			{Name: "bitnami/nginx", Description: "Bitnami container image for NGINX.", Stars: 430, Official: false, Automated: true},
+		}
+		m.input.SetValue("nginx")
+	case "tag-image":
+		if len(batch.Images) > 0 {
+			m.tagSourceID = batch.Images[0].ID
+			m.tagSourceImage = batch.Images[0].Name()
+			m.input.SetValue("registry.example.com/web:1.27")
+		}
+	case "push-image":
+		m.pushImageRef = "registry.example.com/web:1.27"
+		m.pushBusy = true
+		m.pushProgress = []engine.Progress{
+			{ID: "layer-1", Status: "Pushed", Current: 10485760, Total: 10485760},
+			{ID: "layer-2", Status: "Pushing", Current: 5242880, Total: 10485760},
+		}
+	case "export-image":
+		if len(batch.Images) > 0 {
+			m.exportImageID = batch.Images[0].ID
+			m.input.SetValue("/tmp/nginx-export.tar")
+		}
+	case "import-image":
+		m.input.SetValue("/tmp/app-bundle.tar")
+	case "daemon-mirrors":
+		m.mirrorDiffText = "--- /etc/docker/daemon.json\n+++ /etc/docker/daemon.json\n+   \"registry-mirrors\": [\"https://mirror.gcr.io\"]"
+		m.mirrorSudoCmd = "echo '{\"registry-mirrors\": [\"https://mirror.gcr.io\"]}' | sudo tee /etc/docker/daemon.json && sudo systemctl reload docker"
 	}
 }
 

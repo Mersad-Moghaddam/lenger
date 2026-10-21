@@ -733,3 +733,196 @@ func (m *Model) cleanupSummary() string {
 	}
 	return strings.Join(parts, " · ") + " · " + components.Bytes(m.selectedCleanupTotal())
 }
+
+func (m *Model) openRegistrySearch() tea.Cmd {
+	m.overlay = "registry-search"
+	m.input.Reset()
+	m.input.Placeholder = "Search Docker Hub, GHCR, Quay..."
+	m.registryResults = nil
+	m.registryCursor = 0
+	m.registryTags = nil
+	m.registryTagCursor = 0
+	m.registrySearching = false
+	m.registryBrowsingTags = false
+	m.registryErr = ""
+	return m.input.Focus()
+}
+
+func (m *Model) executeRegistrySearch(query string) tea.Cmd {
+	trimmed := strings.TrimSpace(query)
+	if trimmed == "" {
+		return nil
+	}
+	m.registrySearching = true
+	m.registryErr = ""
+	m.registryBrowsingTags = false
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		results, err := service.SearchRegistry(ctx, trimmed)
+		return registrySearchMsg{query: trimmed, results: results, err: err}
+	}
+}
+
+func (m *Model) fetchRemoteTags(repo string) tea.Cmd {
+	m.registrySearching = true
+	m.registryErr = ""
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		tags, err := service.ListRemoteTags(ctx, repo)
+		return remoteTagsMsg{repo: repo, tags: tags, err: err}
+	}
+}
+
+func (m *Model) checkSelectedImageUpdate() tea.Cmd {
+	items := m.items()
+	if len(items) == 0 {
+		return m.notify("No image selected.")
+	}
+	img := items[m.cursor]
+	ref := img.Name()
+	var localDigest string
+	if len(img.Digests) > 0 {
+		localDigest = img.Digests[0]
+	}
+	if ins, ok := m.inspections[img.ID]; ok && len(ins.Digests) > 0 {
+		localDigest = ins.Digests[0]
+	}
+
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		status, err := service.CheckUpdate(ctx, ref, localDigest)
+		return imageUpdateMsg{id: img.ID, status: status, err: err}
+	}
+}
+
+func (m *Model) scanSelectedImage() tea.Cmd {
+	items := m.items()
+	if len(items) == 0 {
+		return m.notify("No image selected.")
+	}
+	img := items[m.cursor]
+	ref := img.Name()
+
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		report, err := service.ScanImage(ctx, ref)
+		return vulnScanMsg{id: img.ID, report: report, err: err}
+	}
+}
+
+func (m *Model) openTagImage() tea.Cmd {
+	items := m.items()
+	if len(items) == 0 {
+		return m.notify("No image selected.")
+	}
+	img := items[m.cursor]
+	m.tagSourceID = img.ID
+	m.tagSourceImage = img.Name()
+	m.overlay = "tag-image"
+	m.input.Reset()
+	m.input.Placeholder = "repo/name:tag"
+	return m.input.Focus()
+}
+
+func (m *Model) submitTagImage() tea.Cmd {
+	target := strings.TrimSpace(m.input.Value())
+	if target == "" {
+		return m.notify("Tag cannot be empty.")
+	}
+	sourceID := m.tagSourceID
+	ctx, service := m.ctx, m.service
+	m.input.Blur()
+	return func() tea.Msg {
+		err := service.TagImage(ctx, sourceID, target)
+		return imageTaggedMsg{sourceID: sourceID, targetRef: target, err: err}
+	}
+}
+
+func (m *Model) openPushImage() tea.Cmd {
+	items := m.items()
+	if len(items) == 0 {
+		return m.notify("No image selected.")
+	}
+	img := items[m.cursor]
+	ref := img.Name()
+	m.pushImageRef = ref
+	m.pushBusy = true
+	m.pushProgress = nil
+	m.pushErr = ""
+	m.overlay = "push-image"
+	return m.executePush(ref)
+}
+
+func (m *Model) executePush(ref string) tea.Cmd {
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		err := service.PushImage(ctx, ref, func(p engine.Progress) error {
+			return nil
+		})
+		return pushDoneMsg{ref: ref, err: err}
+	}
+}
+
+func (m *Model) openExportImage() tea.Cmd {
+	items := m.items()
+	if len(items) == 0 {
+		return m.notify("No image selected.")
+	}
+	img := items[m.cursor]
+	m.exportImageID = img.ID
+	m.overlay = "export-image"
+	m.input.Reset()
+	cleanName := strings.ReplaceAll(img.Name(), "/", "-")
+	cleanName = strings.ReplaceAll(cleanName, ":", "-")
+	m.input.SetValue(filepath.Join(os.TempDir(), cleanName+".tar"))
+	return m.input.Focus()
+}
+
+func (m *Model) submitExportImage() tea.Cmd {
+	path := strings.TrimSpace(m.input.Value())
+	if path == "" {
+		return m.notify("Export path cannot be empty.")
+	}
+	id := m.exportImageID
+	ctx, service := m.ctx, m.service
+	m.input.Blur()
+	return func() tea.Msg {
+		err := service.SaveImage(ctx, id, path)
+		return imageSavedMsg{path: path, err: err}
+	}
+}
+
+func (m *Model) openImportImage() tea.Cmd {
+	m.overlay = "import-image"
+	m.input.Reset()
+	m.input.Placeholder = "/path/to/image.tar"
+	return m.input.Focus()
+}
+
+func (m *Model) submitImportImage() tea.Cmd {
+	path := strings.TrimSpace(m.input.Value())
+	if path == "" {
+		return m.notify("Import path cannot be empty.")
+	}
+	ctx, service := m.ctx, m.service
+	m.input.Blur()
+	return func() tea.Msg {
+		err := service.LoadImage(ctx, path)
+		return imageLoadedMsg{path: path, err: err}
+	}
+}
+
+func (m *Model) showDaemonMirrors() tea.Cmd {
+	mirrors := []string{"mirror.gcr.io", "registry-1.docker.io"}
+	if len(m.config.Registry.Mirrors) > 0 {
+		mirrors = m.config.Registry.Mirrors
+	}
+	existingJSON := "{}"
+	if data, err := os.ReadFile("/etc/docker/daemon.json"); err == nil {
+		existingJSON = string(data)
+	}
+	diff, newCfg, err := services.GenerateDaemonMirrorsDiff(existingJSON, mirrors)
+	return func() tea.Msg {
+		return daemonMirrorsMsg{diff: diff, newConfig: newCfg, err: err}
+	}
+}

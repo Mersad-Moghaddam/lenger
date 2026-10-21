@@ -60,28 +60,43 @@ func ImageDetail(s style.Sheet, image engine.Image, inspect *engine.Inspection, 
 	if inspect == nil {
 		lines = append(lines, "Press i or Enter to load inspection and layers.")
 	} else {
+		// Update Status Sounding (IMG-09)
+		if inspect.UpdateStatus != nil {
+			if inspect.UpdateStatus.HasUpdate {
+				lines = append(lines, s.Text("▲ UPDATE AVAILABLE — remote registry digest has diverged", s.Palette.Warning))
+				if inspect.UpdateStatus.RemoteDigest != "" {
+					lines = append(lines, s.Muted("Remote: "+style.Fit(inspect.UpdateStatus.RemoteDigest, max(10, width-20), 1)))
+				}
+			} else {
+				lines = append(lines, s.Text("✓ Up to date with remote registry", s.Palette.Success))
+			}
+			lines = append(lines, "")
+		}
+
+		// Vulnerability Scan Sounding (IMG-10)
+		if inspect.Vulnerabilities != nil {
+			v := inspect.Vulnerabilities
+			scannerLabel := strings.ToUpper(v.Scanner)
+			if scannerLabel == "" {
+				scannerLabel = "VULNERABILITIES"
+			}
+			lines = append(lines, s.Heading("SECURITY SCAN ("+scannerLabel+")"))
+			if v.Error != "" {
+				lines = append(lines, s.Muted(v.Error))
+			} else {
+				crit := s.Text(fmt.Sprintf("CRIT:%d", v.Critical), s.Palette.Danger)
+				high := s.Text(fmt.Sprintf("HIGH:%d", v.High), s.Palette.Warning)
+				med := s.Text(fmt.Sprintf("MED:%d", v.Medium), s.Palette.Accent)
+				low := s.Text(fmt.Sprintf("LOW:%d", v.Low), s.Palette.Muted)
+				fix := fmt.Sprintf("Fixable: %d", v.Fixable)
+				lines = append(lines, fmt.Sprintf("%s  %s  %s  %s  %s", crit, high, med, low, s.Muted(fix)))
+			}
+			lines = append(lines, "")
+		}
+
 		lines = append(lines, style.Clean(inspect.Platform), "", s.Heading("LAYERS"))
-		sizes := make([]int64, len(inspect.Layers))
-		for n, l := range inspect.Layers {
-			sizes[n] = l.Size
-		}
-		segments := chart.Segments(sizes, max(1, width-tokens.InsetX*2-tokens.PanelFrame))
-		var ribbon strings.Builder
-		for n, cells := range segments {
-			glyph := "█"
-			if s.ASCII {
-				glyph = "#"
-			}
-			ribbon.WriteString(s.Text(strings.Repeat(glyph, cells), s.Palette.Series[n%len(s.Palette.Series)]))
-		}
-		lines = append(lines, ribbon.String())
-		for n, l := range inspect.Layers {
-			if n >= 4 {
-				lines = append(lines, fmt.Sprintf("… %d more layers", len(inspect.Layers)-n))
-				break
-			}
-			lines = append(lines, components.Bytes(l.Size)+"  "+style.Clean(l.Command))
-		}
+		lines = append(lines, LayerBreakdown(s, inspect.Layers, width))
+
 		lines = append(lines, "", s.Heading("CONFIG"), "Entrypoint: "+style.Clean(strings.Join(inspect.Entrypoint, " ")), "Command: "+style.Clean(strings.Join(inspect.Command, " ")), "Ports: "+style.Clean(strings.Join(inspect.Ports, ", ")))
 		lines = append(lines, "", s.Heading("ENVIRONMENT (MASKED)"))
 		for _, v := range inspect.Env {
@@ -112,6 +127,8 @@ func ImageDetail(s style.Sheet, image engine.Image, inspect *engine.Inspection, 
 	for _, c := range image.UsedBy {
 		lines = append(lines, style.Clean(c.Name)+"  "+components.Pill(s, c.State))
 	}
+
+	lines = append(lines, "", s.Muted("[U] Check update  [S] Registry search  [t] Tag  [P] Push  [E] Export"))
 	return s.Panel(image.Name(), strings.Join(lines, "\n"), width, height, false)
 }
 

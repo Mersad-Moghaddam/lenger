@@ -156,12 +156,35 @@ type Layer struct {
 	Size        int64
 }
 
+// VulnerabilityReport records security scanning findings from Trivy, Grype, or Scout (IMG-10).
+type VulnerabilityReport struct {
+	Scanner   string
+	Critical  int
+	High      int
+	Medium    int
+	Low       int
+	Fixable   int
+	ScannedAt time.Time
+	Error     string
+}
+
+// ImageUpdateStatus tracks whether an image's remote tag digest has drifted from the local image (IMG-09).
+type ImageUpdateStatus struct {
+	Ref          string
+	LocalDigest  string
+	RemoteDigest string
+	HasUpdate    bool
+	CheckedAt    time.Time
+}
+
 // Inspection contains structured image metadata. Services mask values by default.
 type Inspection struct {
 	ID, Platform                             string
 	Env, Entrypoint, Command, Ports, Digests []string
 	Labels                                   map[string]string
 	Layers                                   []Layer
+	Vulnerabilities                          *VulnerabilityReport
+	UpdateStatus                             *ImageUpdateStatus
 }
 
 // Progress is one Docker pull stream update.
@@ -233,6 +256,23 @@ type ComposeProject struct {
 	Containers       []Container
 }
 
+// RegistrySearchResult is an entry from searching a remote container registry (IMG-06).
+type RegistrySearchResult struct {
+	Name        string
+	Description string
+	Stars       int
+	Official    bool
+	Automated   bool
+}
+
+// RemoteTag is a published tag with its manifest digest and timestamp (IMG-06).
+type RemoteTag struct {
+	Name      string
+	Digest    string
+	Size      int64
+	UpdatedAt time.Time
+}
+
 // Engine abstracts local daemon access. Stream callbacks must not be retained.
 type Engine interface {
 	ListImages(context.Context) ([]Image, error)
@@ -261,6 +301,14 @@ type Engine interface {
 
 	DaemonInfo(context.Context) (DaemonInfo, error)
 	Compose(context.Context, ComposeAction, ComposeOptions, func(string) error) error
+
+	SearchRegistry(context.Context, string) ([]RegistrySearchResult, error)
+	ListRemoteTags(context.Context, string) ([]RemoteTag, error)
+	CheckImageUpdate(context.Context, string, string) (ImageUpdateStatus, error)
+	TagImage(context.Context, string, string) error
+	PushImage(context.Context, string, func(Progress) error) error
+	SaveImage(context.Context, string, string) error
+	LoadImage(context.Context, string) error
 
 	Events(context.Context, func(Event) error) error
 	Close() error

@@ -160,6 +160,18 @@ func (m *Model) overlayContent() (string, string) {
 		return "Confirm volume removal", m.removeVolumeOverlay()
 	case "exec":
 		return "Exec shell", m.execOverlay()
+	case "registry-search":
+		return "Registry Search & Tag Browser", m.registrySearchOverlay()
+	case "tag-image":
+		return "Tag Image", m.tagImageOverlay()
+	case "push-image":
+		return "Push Image", m.pushImageOverlay()
+	case "export-image":
+		return "Export Image Tarball", m.exportImageOverlay()
+	case "import-image":
+		return "Import Image Tarball", m.importImageOverlay()
+	case "daemon-mirrors":
+		return "Registry Mirrors Configuration", m.daemonMirrorsOverlay()
 	case "palette":
 		lines := []string{m.input.View(), ""}
 		results := m.paletteActions()
