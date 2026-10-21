@@ -70,18 +70,22 @@ func TestStatsStopBetweenRequests(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.HasSuffix(r.URL.Path, "/json") {
 					n := inspections.Add(1)
-					fmt.Fprintf(w, `{"State":{"Running":%t,"Status":%q}}`, n == 1 || !tc.stopped, map[bool]string{true: "exited", false: "running"}[n > 1 && tc.stopped])
+					_, _ = fmt.Fprintf(w, `{"State":{"Running":%t,"Status":%q}}`, n == 1 || !tc.stopped, map[bool]string{true: "exited", false: "running"}[n > 1 && tc.stopped])
 					return
 				}
 				w.WriteHeader(tc.status)
-				fmt.Fprint(w, tc.payload)
+				_, _ = fmt.Fprint(w, tc.payload)
 			})
 			// Track response closure while preserving real HTTP and SDK behavior.
 			c, err := client.New(client.WithHost(e.client.DaemonHost()), client.WithAPIVersion("1.52"), client.WithHTTPClient(&http.Client{Transport: &failedResponseTransport{base: trackingTransport{closed: &closed}}}))
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer c.Close()
+			t.Cleanup(func() {
+				if err := c.Close(); err != nil {
+					t.Errorf("close test client: %v", err)
+				}
+			})
 			e.client = c
 			s, err := e.ContainerStats(context.Background(), "c")
 			if (err != nil) != tc.wantError {
@@ -108,11 +112,11 @@ func TestStatsInspectErrorDoesNotExposeCredentials(t *testing.T) {
 			if strings.HasSuffix(r.URL.Path, "/json") {
 				inspections++
 				if second && inspections == 1 {
-					fmt.Fprint(w, `{"State":{"Running":true}}`)
+					_, _ = fmt.Fprint(w, `{"State":{"Running":true}}`)
 					return
 				}
 				w.WriteHeader(http.StatusForbidden)
-				fmt.Fprint(w, `{"message":"proxy https://user:credential-secret@example.test token=credential-secret"}`)
+				_, _ = fmt.Fprint(w, `{"message":"proxy https://user:credential-secret@example.test token=credential-secret"}`)
 			}
 		})
 		_, err := e.ContainerStats(context.Background(), "c")
@@ -140,10 +144,10 @@ func TestStatsCPUCompatibilityEdges(t *testing.T) {
 			e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.HasSuffix(r.URL.Path, "/json") {
-					fmt.Fprint(w, `{"State":{"Running":true}}`)
+					_, _ = fmt.Fprint(w, `{"State":{"Running":true}}`)
 					return
 				}
-				fmt.Fprintf(w, `{"read":"2026-10-21T10:00:00Z","cpu_stats":%s,"memory_stats":{"usage":null,"limit":100},"networks":null,"blkio_stats":null,"pids_stats":{"current":null}}`, tc.cpu)
+				_, _ = fmt.Fprintf(w, `{"read":"2026-10-21T10:00:00Z","cpu_stats":%s,"memory_stats":{"usage":null,"limit":100},"networks":null,"blkio_stats":null,"pids_stats":{"current":null}}`, tc.cpu)
 			})
 			s, err := e.ContainerStats(context.Background(), "c")
 			if err != nil {
@@ -180,7 +184,7 @@ func TestStatsTransportErrorIsNotUnavailable(t *testing.T) {
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/json") {
 			inspections.Add(1)
-			fmt.Fprint(w, `{"State":{"Running":true}}`)
+			_, _ = fmt.Fprint(w, `{"State":{"Running":true}}`)
 			return
 		}
 		connection, _, err := w.(http.Hijacker).Hijack()
@@ -205,7 +209,7 @@ func TestNewEngineStatsHTTP(t *testing.T) {
 			w.Header().Set("API-Version", "1.52")
 			return
 		}
-		fmt.Fprint(w, `{"State":{"Running":false}}`)
+		_, _ = fmt.Fprint(w, `{"State":{"Running":false}}`)
 	}))
 	defer s.Close()
 	t.Setenv("DOCKER_HOST", s.URL)
@@ -215,7 +219,11 @@ func TestNewEngineStatsHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer e.Close()
+	t.Cleanup(func() {
+		if err := e.Close(); err != nil {
+			t.Errorf("close test engine: %v", err)
+		}
+	})
 	stats, err := e.ContainerStats(context.Background(), "c")
 	if err != nil || stats.State != engine.TelemetryUnavailable {
 		t.Fatalf("stats=%+v err=%v", stats, err)
@@ -231,19 +239,23 @@ func TestLogsCloseBodiesOnExit(t *testing.T) {
 				if strings.HasSuffix(r.URL.Path, "/json") {
 					if mode == "inspect failure" {
 						w.WriteHeader(http.StatusForbidden)
-						fmt.Fprint(w, `{"message":"denied"}`)
+						_, _ = fmt.Fprint(w, `{"message":"denied"}`)
 						return
 					}
-					fmt.Fprint(w, `{"Config":{"Tty":true}}`)
+					_, _ = fmt.Fprint(w, `{"Config":{"Tty":true}}`)
 					return
 				}
-				fmt.Fprint(w, "line\n")
+				_, _ = fmt.Fprint(w, "line\n")
 			})
 			c, err := client.New(client.WithHost(e.client.DaemonHost()), client.WithAPIVersion("1.52"), client.WithHTTPClient(&http.Client{Transport: &failedResponseTransport{base: trackingTransport{closed: &closed}}}))
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer c.Close()
+			t.Cleanup(func() {
+				if err := c.Close(); err != nil {
+					t.Errorf("close test client: %v", err)
+				}
+			})
 			e.client = c
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
@@ -276,7 +288,7 @@ func TestLogsUntilAndPrevious(t *testing.T) {
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.HasSuffix(r.URL.Path, "/json") {
-			fmt.Fprint(w, `{"Config":{"Tty":true}}`)
+			_, _ = fmt.Fprint(w, `{"Config":{"Tty":true}}`)
 			return
 		}
 		// The adapter supplies RFC3339; Moby normalizes that to Unix time on the wire.
@@ -286,7 +298,7 @@ func TestLogsUntilAndPrevious(t *testing.T) {
 		if r.URL.Query().Get("follow") == "1" || r.URL.Query().Get("follow") == "true" {
 			t.Error("historical logs must not follow")
 		}
-		fmt.Fprint(w, "2026-10-21T08:59:59Z previous run\n")
+		_, _ = fmt.Fprint(w, "2026-10-21T08:59:59Z previous run\n")
 	})
 	var entries []engine.LogEntry
 	err := e.Logs(context.Background(), "c", engine.LogOptions{Until: until, Previous: true, Follow: true}, func(entry engine.LogEntry) error { entries = append(entries, entry); return nil })
@@ -299,7 +311,7 @@ func TestLogsUnsupportedDriver(t *testing.T) {
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotImplemented)
-		fmt.Fprint(w, `{"message":"configured logging driver does not support reading"}`)
+		_, _ = fmt.Fprint(w, `{"message":"configured logging driver does not support reading"}`)
 	})
 	err := e.Logs(context.Background(), "c", engine.LogOptions{}, func(engine.LogEntry) error { return nil })
 	if !errors.Is(err, engine.ErrLogsNotSupported) {
@@ -320,10 +332,10 @@ func TestStatsAvailabilityAndSafeCPU(t *testing.T) {
 			e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				if strings.HasSuffix(r.URL.Path, "/json") {
-					fmt.Fprint(w, `{"State":{"Status":"running","Running":true}}`)
+					_, _ = fmt.Fprint(w, `{"State":{"Status":"running","Running":true}}`)
 					return
 				}
-				fmt.Fprint(w, tc.payload)
+				_, _ = fmt.Fprint(w, tc.payload)
 			})
 			s, err := e.ContainerStats(context.Background(), "c")
 			if err != nil {
@@ -362,7 +374,7 @@ func TestStatsStoppedUnavailable(t *testing.T) {
 				if !strings.HasSuffix(r.URL.Path, "/json") {
 					t.Error("stats requested for inactive container")
 				}
-				fmt.Fprintf(w, `{"State":{"Status":%q,"Running":false}}`, state)
+				_, _ = fmt.Fprintf(w, `{"State":{"Status":%q,"Running":false}}`, state)
 			})
 			s, err := e.ContainerStats(context.Background(), "c")
 			if err != nil || s.State != engine.TelemetryUnavailable || s.MemoryAvailable {
@@ -384,13 +396,13 @@ func TestStatsErrorsRemainErrors(t *testing.T) {
 		e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			if strings.HasSuffix(r.URL.Path, "/json") {
-				fmt.Fprint(w, `{"State":{"Running":true}}`)
+				_, _ = fmt.Fprint(w, `{"State":{"Running":true}}`)
 				return
 			}
 			if strings.Contains(payload, "permission") {
 				w.WriteHeader(http.StatusForbidden)
 			}
-			fmt.Fprint(w, payload)
+			_, _ = fmt.Fprint(w, payload)
 		})
 		if _, err := e.ContainerStats(context.Background(), "c"); err == nil {
 			t.Fatal("stats failure silently treated as missing measurement")

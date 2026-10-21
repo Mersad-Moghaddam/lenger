@@ -18,7 +18,7 @@ import (
 func TestInspectHistoryHasNoAggregateHealth(t *testing.T) {
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"State":{"Health":{"Status":"unhealthy","FailingStreak":7,"Log":[{"Start":"2026-10-21T01:00:00Z","ExitCode":1},{"Start":"2026-10-21T01:01:00Z","ExitCode":0}]}}}`)
+		_, _ = fmt.Fprint(w, `{"State":{"Health":{"Status":"unhealthy","FailingStreak":7,"Log":[{"Start":"2026-10-21T01:00:00Z","ExitCode":1},{"Start":"2026-10-21T01:01:00Z","ExitCode":0}]}}}`)
 	})
 	i, err := e.InspectContainer(context.Background(), "fixture")
 	if err != nil {
@@ -53,7 +53,7 @@ func TestInspectHistoryCapSkipsNilSlots(t *testing.T) {
 			}
 			e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprintf(w, `{"State":{"Health":{"Log":[%s]}}}`, strings.Join(slots, ","))
+				_, _ = fmt.Fprintf(w, `{"State":{"Health":{"Log":[%s]}}}`, strings.Join(slots, ","))
 			})
 			i, err := e.InspectContainer(context.Background(), "fixture")
 			if err != nil {
@@ -85,7 +85,11 @@ func TestInspectSafeClassification(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer c.Close()
+		t.Cleanup(func() {
+			if err := c.Close(); err != nil {
+				t.Errorf("close test client: %v", err)
+			}
+		})
 		e := &Engine{client: c}
 		_, err = e.InspectContainer(context.Background(), "fixture")
 		if err == nil || engine.Classify(err).Category != "daemon" {

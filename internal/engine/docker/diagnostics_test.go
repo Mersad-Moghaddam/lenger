@@ -16,7 +16,7 @@ import (
 func TestInspectDiagnosticEvidenceContract(t *testing.T) {
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"Config":{"Cmd":["command-secret"],"Entrypoint":["command-secret"]},"State":{"Health":{"Status":"healthy","Log":[{"Start":"2026-10-21T01:00:00Z","End":"2026-10-21T01:00:01Z","ExitCode":0,"Output":"probe-secret"}]}}}`)
+		_, _ = fmt.Fprint(w, `{"Config":{"Cmd":["command-secret"],"Entrypoint":["command-secret"]},"State":{"Health":{"Status":"healthy","Log":[{"Start":"2026-10-21T01:00:00Z","End":"2026-10-21T01:00:01Z","ExitCode":0,"Output":"probe-secret"}]}}}`)
 	})
 	i, err := e.InspectContainer(context.Background(), "fixture")
 	if err != nil {
@@ -48,7 +48,7 @@ func TestInspectDiagnosticBoundedHistory(t *testing.T) {
 	}
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"State":{"Health":{"Log":[%s]}}}`, strings.Join(entries, ","))
+		_, _ = fmt.Fprintf(w, `{"State":{"Health":{"Log":[%s]}}}`, strings.Join(entries, ","))
 	})
 	i, err := e.InspectContainer(context.Background(), "fixture")
 	if err != nil {
@@ -64,7 +64,7 @@ func TestInspectDiagnosticErrorSafe(t *testing.T) {
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(500)
-		fmt.Fprint(w, `{"message":"daemon-secret command-secret"}`)
+		_, _ = fmt.Fprint(w, `{"message":"daemon-secret command-secret"}`)
 	})
 	_, err := e.InspectContainer(context.Background(), "fixture")
 	if err == nil {
@@ -94,7 +94,7 @@ func TestInspectDiagnosticMetadata(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
-				fmt.Fprint(w, tc.payload)
+				_, _ = fmt.Fprint(w, tc.payload)
 			})
 			before := time.Now()
 			i, err := e.InspectContainer(context.Background(), "fixture")
