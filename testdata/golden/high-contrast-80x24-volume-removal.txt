@@ -4,8 +4,8 @@
 +------------------------------------------------------------------------------+
 |  VOLUMES  4                                                                  |
 |  f+----------------------------------------------------------------------+   |
-|  >|  Confirm volume removal                                              |   |
-|   |  REMOVE VOLUME                                                       |   |
+|   |  Confirm volume removal                                              |   |
+|  >|  REMOVE VOLUME                                                       |   |
 |   |                                                                      |   |
 |   |  scratch-data                                                        |   |
 |   |                                                                      |   |
@@ -19,6 +19,6 @@
 |   +----------------------------------------------------------------------+   |
 |                                                                              |
 +------------------------------------------------------------------------------+
-d remove unused  / filter  c cleanup  R refresh   v 0 jobs                      
+p prune unused  d remove  Enter details  / filter  c cleanup  R refresh   v 0 jo
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

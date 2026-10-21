@@ -114,6 +114,13 @@ type ContainerStats struct {
 	PIDs                                                                           uint64
 }
 
+// Current is the shared quick-stat policy. Unknown timestamps, stopped
+// collection, non-running lifecycles and samples older than ten seconds are
+// never presented as live measurements. Availability remains per metric.
+func (s ContainerStats) Current(state string, now time.Time) bool {
+	return state == "running" && s.State == TelemetryActive && !s.At.IsZero() && !s.At.After(now) && now.Sub(s.At) <= 10*time.Second
+}
+
 // TelemetryState distinguishes fresh samples from session history and absence.
 type TelemetryState int
 

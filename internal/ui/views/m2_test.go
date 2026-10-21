@@ -67,15 +67,17 @@ func TestNetworksViewRendersIPAMAndEndpoints(t *testing.T) {
 		"storefront_default",
 		"bridge",
 		"1 endpoints",
-		"IPAM CONFIGURATION",
 		"172.28.0.0/16",
 		"172.28.0.1",
-		"CONNECTED CONTAINERS (1)",
-		"storefront-web-1",
-		"172.28.0.2/16",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("networks view missing %q:\n%s", want, text)
+		}
+	}
+	detail := strings.Join(NetworkDetailRows(plainSheet(), net, 74, now), "\n")
+	for _, want := range []string{"IPAM CONFIGURATION", "CONNECTED CONTAINERS (1)", "storefront-web-1", "172.28.0.2/16"} {
+		if !strings.Contains(detail, want) {
+			t.Fatalf("explicit detail missing %q: %s", want, detail)
 		}
 	}
 }

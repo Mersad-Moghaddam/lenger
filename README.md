@@ -110,6 +110,14 @@ result.
 | `Esc` | Close current context or clear filter |
 | `q` | Quit / close current overlay |
 
+Docker log records retain up to 64 KiB each (including the timestamp prefix);
+larger records retain a prefix with an explicit `[truncated]` marker. Live and
+previous-log views retain at most 10,000 records and 16 MiB of log text, evicting
+oldest records when either limit is reached. These are text-storage limits, not
+total process memory limits: entry indexes, stream metadata, transport buffers
+and transient viewport/copy snapshots add overhead. Ordinary records within the
+cap keep their full diagnostic content for search, level filtering and copying.
+
 The container drawer has five inspectors: Health & Diagnostics, Live Logs,
 Metrics, Env & Ports, and Timeline. Follow the visible drawer hints for
 tab selection and log follow/filter controls; keys are contextual.

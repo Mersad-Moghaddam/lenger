@@ -5,11 +5,11 @@
 |  CONTAINERS  3                                      |   1. Previous instance logs                                                                             
 |  filter —                                           | > 2. Restart container                                                                                  
 |  > postgres-1         + running postgres:16         |   3. Healthcheck command / evidence                                                                     
-|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront   | [Docker Engine Inspect]                                                                                 
-|    redis-1            - exited redis:7.4            | State: running                                                                                          
+|    cpu —  mem —  storefront · 5432/tcp · up 1d 0h   | [Docker Engine Inspect]                                                                                 
+|    redis-1            - Exited (0) redis:7.4        | State: running                                                                                          
 |    cpu —  mem —  storefront · 6379/tcp              | Health: healthy                                                                                         
 |    web-1              + running nginx:1.27-alpine   | ExitCode: 0 · OOMKilled: false                                                                          
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront ·  | Probe exit code: 0                                                                                      
+|    cpu —  mem —  storefront · 8080->80/tcp · up 3h  | Probe exit code: 0                                                                                      
 |                                                     | Inspect timestamp: 2026-10-21T12:00:00Z                                                                 
 |                                                     | RestartCount: 0                                                                                         
 |                                                     | Restart policy: unless-stopped                                                                          

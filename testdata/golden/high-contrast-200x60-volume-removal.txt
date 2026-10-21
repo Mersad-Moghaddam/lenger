@@ -1,26 +1,26 @@
 @ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
 1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                                                           
                         =========                                                                                                                                                                       
-+----------------------------------------------------------------------------------------------------------------------+  +----------------------------------------------------------------------------+
-|  VOLUMES  4                                                                                                          |  |  postgres-data                                                             |
-|  filter —                                                                                                            |  |  local · local                                                             |
-|  > postgres-data                                                                                  1.4 GB 1 refs      |  |  /var/lib/docker/volumes/postgres-data/_data                               |
-|    redis-data                                                                                    96.0 MB 1 refs      |  |                                                                            |
-|    scratch-data                                                                                  64.0 MB 0 refs      |  |  Created 10d ago                                                           |
-|    web-content                                                                                  320.0 MB 1 refs      |  |  1.4 GB on disk                                                            |
-|                                                                                                                      |  |  1 container reference(s)                                                  |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |  USED BY                                                                   |
-|                                                                                                                      |  |  postgres-1  + running                                                     |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |  d remove unused   esc back                                                |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|  VOLUMES  4                                                                                                                                                                                          |
+|  filter —                                                                                                                                                                                            |
+|    DRIVER     VOLUME                                                  MOUNT POINT                                             CONTAINERS                                                   SIZE      |
+|  > local      postgres-data                                           /var/lib/docker/volumes/postgres-data/_data             postgres-1                                                 1.4 GB      |
+|    local      redis-data                                              /var/lib/docker/volumes/redis-data/_data                redis-1                                                   96.0 MB      |
+|    local      scratch-data                                            /var/lib/docker/volumes/scratch-data/_data              0 refs                                                    64.0 MB      |
+|    local      web-content                                             /var/lib/docker/volumes/web-content/_data               web-1                                                    320.0 MB      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
 |                                                               +----------------------------------------------------------------------+                                                               |
 |                                                               |  Confirm volume removal                                              |                                                               |
 |                                                               |  REMOVE VOLUME                                                       |                                                               |
@@ -35,26 +35,26 @@
 |                                                               |                                                                      |                                                               |
 |                                                               |  enter remove   esc cancel                                           |                                                               |
 |                                                               +----------------------------------------------------------------------+                                                               |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-|                                                                                                                      |  |                                                                            |
-+----------------------------------------------------------------------------------------------------------------------+  +----------------------------------------------------------------------------+
-d remove unused  / filter  c cleanup  R refresh   v 0 jobs                                                                                                                                              
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
+|                                                                                                                                                                                                      |
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+p prune unused  d remove  Enter details  / filter  c cleanup  R refresh   v 0 jobs                                                                                                                      
 Local daemon. No accounts. No telemetry.                                                                                                                                                                
                                                                                                                                                                                                         

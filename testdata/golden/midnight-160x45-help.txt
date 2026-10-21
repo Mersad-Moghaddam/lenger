@@ -5,11 +5,11 @@
 |  CONTAINERS  3                                                                                                                                               |
 |  filter —                                                                                                                                                    |
 |  > postgres-1               + running postgres:16                                                                                                            |
-|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · up 1d 0h                                                                                      |
-|    redis-1                  - exited redis:7.4                                                                                                               |
+|    cpu —  mem —  storefront · 5432/tcp · up 1d 0h                                                                                                            |
+|    redis-1                  - Exited (0) redis:7.4                                                                                                           |
 |    cpu —  mem —  storefront · 6379/tcp    +----------------------------------------------------------------------+                                           |
 |    web-1                    + running ngin|  Keyboard chart                                                      |                                           |
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  stor|  1–7       Switch view                                               |                                           |
+|    cpu —  mem —  storefront · 8080->80/tcp|  1–7       Switch view                                               |                                           |
 |                                           |  j/k ↑/↓   Move through the active list                              |                                           |
 |                                           |  enter / i Inspect the selected resource                             |                                           |
 |                                           |  space     Toggle selection (images/containers)                      |                                           |

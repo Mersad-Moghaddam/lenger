@@ -4,8 +4,8 @@
 +------------------------------------------------------------------------------+
 |  NETWORKS  4                                                                 |
 |  f+----------------------------------------------------------------------+   |
-|  >|  Create Docker Network                                               |   |
-|   |  NETWORK NAME                                                        |   |
+|   |  Create Docker Network                                               |   |
+|  >|  NETWORK NAME                                                        |   |
 |   |    [37m> custom-bridge[m [37m                                                [m  |   |
 |   |                                                                      |   |
 |   |  DRIVER                                                              |   |
@@ -19,6 +19,6 @@
 |                                                                              |
 |                                                                              |
 +------------------------------------------------------------------------------+
-c create  d remove  / filter  R refresh  q quit   v 0 jobs                      
+Enter assignments  c create  d remove  / filter  R refresh  q quit   v 0 jobs   
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

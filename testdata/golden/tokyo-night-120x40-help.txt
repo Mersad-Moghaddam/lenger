@@ -5,11 +5,11 @@
 |  CONTAINERS  3                                                                                                       |
 |  filter —                                                                                                            |
 |  > postgres-1               + running postgres:16                                                                    |
-|    cpu  7.1% ++++*#*+*+----------------------------------------------------------------------+                       |
+|    cpu —  mem —  store+----------------------------------------------------------------------+                       |
 |    redis-1            |  Keyboard chart                                                      |                       |
 |    cpu —  mem —  store|  1–7       Switch view                                               |                       |
 |    web-1              |  j/k ↑/↓   Move through the active list                              |                       |
-|    cpu 18.4% +*+*+*+*+|  enter / i Inspect the selected resource                             |                       |
+|    cpu —  mem —  store|  enter / i Inspect the selected resource                             |                       |
 |                       |  space     Toggle selection (images/containers)                      |                       |
 |                       |  shift+↓/↑ Extend selection                                          |                       |
 |                       |  /         Filter images, containers, or volumes                     |                       |

@@ -1,16 +1,16 @@
 @ LENGER   Anchor your containers.                                                            - fixture engine · offline
 1 Containers  2 Images  3 Volumes  4 Networks                                                                           
                                    ==========                                                                           
-+-------------------------------------------------+  +-----------------------------------------------------------------+
-|  NETWORKS  4                                    |  |  NETWORK DETAIL                                                 |
-|  filter —                                       |  |  bridge · bridge                                                |
-|  > bridge              bridge   2 endpoints     |  |  bridge-id                                                      |
-|    host                host     0 endpoints     |  |                                                                 |
-|    none                null     0 endpoints     |  |  Created 30d ago                                                |
-|    storefront_default  bridge   3 endpoints     |  |                                                                 |
-|                                                 |  |  IPAM CONFIGURATION                                             |
-|                                                 |  |  Subnet: 172.17.0.0/16   Gateway: 172.17.0.1                    |
-|                                                 |  |                                                                 |
++----------------------------------------------------------------------------------------------------------------------+
+|  NETWORKS  4                                                                                                         |
+|  filter —                                                                                                            |
+|    NAME                     DRIVER   SCOPE    SUBNET                   GATEWAY                  CONNECTED            |
+|  > bridge                   bridge   local    172.17.0.0/16            172.17.0.1               2 endpoints          |
+|    host                     host     local                                                      0 endpoints          |
+|    none                     null     local                                                      0 endpoints          |
+|    storefront_default       bridge   local    172.28.0.0/16            172.28.0.1               3 endpoints          |
+|                                                                                                                      |
+|                                                                                                                      |
 |                       +----------------------------------------------------------------------+                       |
 |                       |  Confirm Network Removal                                             |                       |
 |                       |  TARGET NETWORK                                                      |                       |
@@ -24,17 +24,17 @@
 |                       |                                                                      |                       |
 |                       |  enter/y remove   esc/n cancel                                       |                       |
 |                       +----------------------------------------------------------------------+                       |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-|                                                 |  |                                                                 |
-+-------------------------------------------------+  +-----------------------------------------------------------------+
-c create  d remove  / filter  R refresh  q quit   v 0 jobs                                                              
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
++----------------------------------------------------------------------------------------------------------------------+
+Enter assignments  c create  d remove  / filter  R refresh  q quit   v 0 jobs                                           
 Local daemon. No accounts. No telemetry.                                                                                
                                                                                                                         

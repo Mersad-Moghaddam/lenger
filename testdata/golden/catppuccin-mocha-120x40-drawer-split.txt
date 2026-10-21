@@ -5,11 +5,11 @@
 |  CONTAINERS  3                        | Live Logs                                                                     
 |  filter —                             | Metrics                                                                       
 |  > postgres-1    + running postgres:  | [Env & Ports]                                                                 
-|    cpu  7.1% ++++*#*+*+  mem 512.0 M  | Timeline                                                                      
-|    redis-1       - exited redis:7.4   | Environment · Space reveal · u reveal all · 60s idle remask                   
+|    cpu —  mem —  storefront · 5432/t  | Timeline                                                                      
+|    redis-1       - Exited (0) redis:  | Environment · Space reveal · u reveal all · 60s idle remask                   
 |    cpu —  mem —  storefront · 6379/t  | > MODE=development                                                            
 |    web-1         + running nginx:1.2  |   API_TOKEN=••••••••••••                                                      
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  | Ports · Enter preview                                                         
+|    cpu —  mem —  storefront · 8080->  | Ports · Enter preview                                                         
 |                                       |   5432/tcp                                                                    
 |                                       | Display only: no safe HTTP preview                                            
 |                                       |                                                                               

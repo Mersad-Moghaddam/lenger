@@ -163,7 +163,7 @@ type PortPreview struct {
 const nonLoopbackWarning = "Security: bound to a non-loopback address; this port may be reachable from other hosts."
 
 // portExposureWarning applies even to published UDP ports with no browser URL.
-func portExposureWarning(mapping string) string {
+func PortExposureWarning(mapping string) string {
 	bound, _, ok := strings.Cut(mapping, "->")
 	if !ok || style.Clean(mapping) != mapping {
 		return ""
@@ -178,6 +178,8 @@ func portExposureWarning(mapping string) string {
 	}
 	return ""
 }
+
+func portExposureWarning(mapping string) string { return PortExposureWarning(mapping) }
 
 // PreviewPort accepts only Docker-style IP:port -> port/tcp mappings. Exposed
 // ports and UDP are display-only. It never accepts a URL, hostname, or command.

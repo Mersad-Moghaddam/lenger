@@ -1,7 +1,6 @@
 package views
 
 import (
-	"charm.land/lipgloss/v2"
 	"fmt"
 	"sort"
 	"strings"
@@ -15,27 +14,14 @@ import (
 
 // Volumes renders volume size, driver, and the containers holding each mount.
 func Volumes(s style.Sheet, items []engine.Volume, cursor int, filter string, width, height int, now time.Time) string {
-	if len(items) == 0 {
-		return VolumeList(s, items, 0, filter, width, height, now)
-	}
-	cursor = max(0, min(cursor, len(items)-1))
-	if width < tokens.DetailWidth {
-		return VolumeList(s, items, cursor, filter, width, height, now)
-	}
-	left := width * 3 / 5
-	right := width - left - tokens.Gap
-	result := lipgloss.JoinHorizontal(lipgloss.Top,
-		VolumeList(s, items, cursor, filter, left, height, now),
-		strings.Repeat(" ", tokens.Gap),
-		VolumeDetail(s, items[cursor], right, height, now),
-	)
-	return style.Fit(result, width, height)
+	return VolumeList(s, items, cursor, filter, width, height, now)
 }
 
 // VolumeList keeps the table compact enough for an 80-column terminal.
 func VolumeList(s style.Sheet, items []engine.Volume, cursor int, filter string, width, height int, now time.Time) string {
-	lines := []string{s.Muted("filter " + emptyDash(filter))}
-	capacity := max(1, height-tokens.PanelFrame-tokens.InsetY*2-1)
+	cell := max(4, (width-34)/3)
+	lines := []string{s.Muted("filter " + emptyDash(filter)), fmt.Sprintf("  %s %s %s %s %9s", padCell("DRIVER", 10), padCell("VOLUME", cell), padCell("MOUNT POINT", cell), padCell("CONTAINERS", cell), "SIZE")}
+	capacity := max(1, height-tokens.PanelFrame-tokens.InsetY*2-2)
 	start := max(0, cursor-capacity+1)
 	end := min(len(items), start+capacity)
 	g := tokens.Icons(s.ASCII)
@@ -53,9 +39,15 @@ func VolumeList(s style.Sheet, items []engine.Volume, cursor int, filter string,
 		if v.RefCount < 0 {
 			refs = "? refs"
 		}
-		nameWidth := max(10, width-29)
-		name := padCell(style.Clean(v.Name), nameWidth)
-		line := fmt.Sprintf("%s %s %9s %s", marker, name, size, refs)
+		var names []string
+		for _, c := range v.UsedBy {
+			names = append(names, c.Name)
+		}
+		associated := strings.Join(names, ",")
+		if associated == "" {
+			associated = refs
+		}
+		line := fmt.Sprintf("%s %s %s %s %s %9s", marker, padCell(style.Clean(v.Driver), 10), padCell(style.Clean(v.Name), cell), padCell(style.Clean(v.Mountpoint), cell), padCell(style.Clean(associated), cell), size)
 		if n == cursor {
 			line = s.Text(line, s.Palette.Accent)
 		}
@@ -69,6 +61,10 @@ func VolumeList(s style.Sheet, items []engine.Volume, cursor int, filter string,
 
 // VolumeDetail names every container that mounts the volume before offering removal.
 func VolumeDetail(s style.Sheet, volume engine.Volume, width, height int, now time.Time) string {
+	return s.Panel(volume.Name, strings.Join(volumeDetailLines(s, volume, now), "\n"), width, height, false)
+}
+
+func volumeDetailLines(s style.Sheet, volume engine.Volume, now time.Time) []string {
 	lines := []string{style.Clean(volume.Driver) + " · " + style.Clean(volume.Scope), style.Clean(volume.Mountpoint), ""}
 	if !volume.CreatedAt.IsZero() {
 		lines = append(lines, "Created "+components.Age(volume.CreatedAt, now))
@@ -100,5 +96,5 @@ func VolumeDetail(s style.Sheet, volume engine.Volume, width, height int, now ti
 		}
 	}
 	lines = append(lines, "", "d remove unused   esc back")
-	return s.Panel(volume.Name, strings.Join(lines, "\n"), width, height, false)
+	return lines
 }

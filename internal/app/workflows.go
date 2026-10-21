@@ -288,6 +288,7 @@ func defaultCleanupSelection() map[services.CleanupKind]bool {
 }
 
 func (m *Model) openCleanup() tea.Cmd {
+	m.resourcePrune = false
 	m.overlay = "cleanup"
 	m.cleanupLoaded = false
 	m.cleanupLoading = false
@@ -296,6 +297,17 @@ func (m *Model) openCleanup() tea.Cmd {
 	m.cleanupCursor = 0
 	m.cleanupSelected = defaultCleanupSelection()
 	return m.loadCleanup()
+}
+
+func (m *Model) openResourcePrune() tea.Cmd {
+	cmd := m.openCleanup()
+	m.resourcePrune = true
+	kind := services.CleanupDanglingImages
+	if m.tab == 2 {
+		kind = services.CleanupUnusedVolumes
+	}
+	m.cleanupSelected = map[services.CleanupKind]bool{kind: true}
+	return cmd
 }
 
 func (m *Model) loadCleanup() tea.Cmd {

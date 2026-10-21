@@ -8,6 +8,7 @@ import (
 	"io"
 	"maps"
 	"math"
+	"net"
 	"net/netip"
 	"slices"
 	"strconv"
@@ -377,10 +378,11 @@ func formatPortSummary(p container.PortSummary) string {
 	if p.PublicPort == 0 {
 		return containerPort
 	}
-	host := fmt.Sprintf("%d", p.PublicPort)
-	if p.IP.IsValid() && !p.IP.IsUnspecified() {
-		host = p.IP.Unmap().String() + ":" + host
+	ip := "0.0.0.0"
+	if p.IP.IsValid() {
+		ip = p.IP.Unmap().String()
 	}
+	host := net.JoinHostPort(ip, fmt.Sprintf("%d", p.PublicPort))
 	return host + "->" + containerPort
 }
 
@@ -389,10 +391,11 @@ func formatPortBinding(port network.Port, binding network.PortBinding) string {
 	if binding.HostPort == "" {
 		return containerPort
 	}
-	host := binding.HostPort
-	if binding.HostIP.IsValid() && !binding.HostIP.IsUnspecified() {
-		host = binding.HostIP.Unmap().String() + ":" + host
+	ip := "0.0.0.0"
+	if binding.HostIP.IsValid() {
+		ip = binding.HostIP.Unmap().String()
 	}
+	host := net.JoinHostPort(ip, binding.HostPort)
 	return host + "->" + containerPort
 }
 

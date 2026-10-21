@@ -67,8 +67,14 @@ func (m *Model) Render() string {
 		body = views.Images(s, items, m.cursor, m.selected, inspect, m.detail, []string{"name", "size", "age"}[m.sortMode], m.filter, w, height, m.clock)
 	case m.tab == 2:
 		body = views.Volumes(s, m.volumes(), m.volumeCursor, m.volumeFilter, w, height, m.clock)
+		if m.detail && len(m.volumes()) > 0 {
+			body = m.renderResourceDetail(views.VolumeDetailRows(s, m.volumes()[m.volumeCursor], w-6, m.clock), w, height)
+		}
 	case m.tab == 3:
 		body = views.Networks(s, m.networks(), m.networkCursor, m.networkFilter, w, height, m.clock)
+		if m.detail && len(m.networks()) > 0 {
+			body = m.renderResourceDetail(views.NetworkDetailRows(s, m.networks()[m.networkCursor], w-6, m.clock), w, height)
+		}
 	default:
 		items := m.containers()
 		var inspect *engine.ContainerInspection
@@ -87,11 +93,11 @@ func (m *Model) Render() string {
 			footer = "Tab focus  ↑/↓ scroll  f/G follow  / search  v level  y copy visible  l live  Esc back"
 		}
 	case 1:
-		footer = "p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup"
+		footer = "p prune dangling  r run  i inspect  d remove  o sort  / filter  space select  : pull"
 	case 2:
-		footer = "d remove unused  / filter  c cleanup  R refresh"
+		footer = "p prune unused  d remove  Enter details  / filter  c cleanup  R refresh"
 	case 3:
-		footer = "c create  d remove  / filter  R refresh  q quit"
+		footer = "Enter assignments  c create  d remove  / filter  R refresh  q quit"
 	}
 	running := 0
 	for _, j := range m.jobList {

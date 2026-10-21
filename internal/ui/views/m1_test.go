@@ -63,7 +63,7 @@ func TestVolumeAndSystemViewsRenderMeasuredFields(t *testing.T) {
 		CreatedAt: now.Add(-3 * time.Hour), Size: 42_000_000, RefCount: 0,
 	}
 	volumes := Volumes(plainSheet(), []engine.Volume{volume}, 0, "", 120, 30, now)
-	if !strings.Contains(volumes, "scratch-data") || !strings.Contains(volumes, "42.0 MB") || !strings.Contains(volumes, "Safe to remove") {
+	if !strings.Contains(volumes, "scratch-data") || !strings.Contains(volumes, "42.0 MB") || !strings.Contains(volumes, "local") {
 		t.Fatalf("volume detail is incomplete:\n%s", volumes)
 	}
 	usage := engine.SystemUsage{

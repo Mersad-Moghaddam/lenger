@@ -5,11 +5,11 @@
 |  CONTAINERS  3                                                    | Environment · Space reveal · u reveal all · 60s idle remask                                                                       
 |  filter —                                                         | > LONG_VALUE=wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped evidenc
 |  > postgres-1              + running postgres:16                  | e wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped evidence wrapped e
-|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · u  | vidence wrapped evidence wrapped evidence wrapped evidence TAIL                                                                   
-|    redis-1                 - exited redis:7.4                     | Ports · Enter preview                                                                                                             
+|    cpu —  mem —  storefront · 5432/tcp · up 1d 0h                 | vidence wrapped evidence wrapped evidence wrapped evidence TAIL                                                                   
+|    redis-1                 - Exited (0) redis:7.4                 | Ports · Enter preview                                                                                                             
 |    cpu —  mem —  storefront · 6379/tcp                            |   5432/tcp                                                                                                                        
 |    web-1                   + running nginx:1.27-alpine            | Display only: no safe HTTP preview                                                                                                
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp   |                                                                                                                                   
+|    cpu —  mem —  storefront · 8080->80/tcp · up 3h 0m             |                                                                                                                                   
 |                                                                   |                                                                                                                                   
 |                                                                   |                                                                                                                                   
 |                                                                   |                                                                                                                                   

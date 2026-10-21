@@ -284,7 +284,7 @@ func TestLogsCloseBodiesOnExit(t *testing.T) {
 }
 
 func TestLogsUntilAndPrevious(t *testing.T) {
-	until := time.Date(2026, 10, 21, 10, 0, 0, 0, time.FixedZone("offset", 3600))
+	until := time.Date(2026, 10, 21, 10, 0, 0, 900123456, time.FixedZone("offset", 3600))
 	e := testAdapter(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if strings.HasSuffix(r.URL.Path, "/json") {
@@ -292,7 +292,7 @@ func TestLogsUntilAndPrevious(t *testing.T) {
 			return
 		}
 		// The adapter supplies RFC3339; Moby normalizes that to Unix time on the wire.
-		if got := r.URL.Query().Get("until"); got != strconv.FormatInt(until.Unix(), 10)+".000000000" {
+		if got := r.URL.Query().Get("until"); got != strconv.FormatInt(until.Unix(), 10)+".900123456" {
 			t.Errorf("until=%q", got)
 		}
 		if r.URL.Query().Get("follow") == "1" || r.URL.Query().Get("follow") == "true" {

@@ -79,6 +79,10 @@ type drawerRevealMsg struct {
 }
 
 func (m *Model) closeDrawer() {
+	if sample, ok := m.stats[m.drawerID]; ok && sample.State == engine.TelemetryActive {
+		sample.State = engine.TelemetrySampled
+		m.stats[m.drawerID] = sample
+	}
 	if m.drawerStatsCancel != nil {
 		m.drawerStatsCancel()
 		m.drawerStatsCancel = nil
@@ -245,6 +249,14 @@ func (m *Model) openDrawer() tea.Cmd {
 		return nil
 	}
 	c := items[m.containerCursor]
+	if m.grouped {
+		for i, row := range m.groupedRows() {
+			if row.id == c.ID {
+				m.groupCursor = i
+				break
+			}
+		}
+	}
 	if m.focus.DrawerOpen && m.drawerID == c.ID {
 		return nil
 	}
@@ -385,7 +397,13 @@ func (m *Model) drawerKey(k string) (bool, tea.Cmd) {
 		case 0:
 			return true, m.requestPreviousLogs()
 		case 1:
-			return true, m.triggerContainerAction(engine.ActionRestart, true)
+			if _, ok := m.containerByID(m.drawerID); !ok {
+				return true, m.notify("Inspected container is no longer available.")
+			}
+			m.actionIDs = []string{m.drawerID}
+			m.actionName = engine.ActionRestart
+			m.overlay = "container-action"
+			return true, nil
 		case 2:
 			m.overlay = "health-command"
 			return true, nil
@@ -586,7 +604,11 @@ func (m *Model) streamDrawerLogs(previous bool) tea.Cmd {
 
 func (m *Model) renderContainers(w, h int) string {
 	l := masterdetail.ComputeLayout(w, h, m.focus.DrawerOpen, m.drawerRatio)
-	list := views.ContainerList(m.sheet, m.containers(), m.containerCursor, m.selectedContain, m.containerFilter, m.stats, m.statCPU, m.statHistory, l.ListWidth, h, m.clock)
+	now := time.Now()
+	if m.fixture {
+		now = m.clock
+	}
+	list := views.ContainerList(m.sheet, m.containers(), m.containerCursor, m.selectedContain, m.containerFilter, m.stats, m.statCPU, m.statHistory, l.ListWidth, h, now)
 	if m.grouped {
 		list = m.renderGroupedList(l.ListWidth, h)
 	}

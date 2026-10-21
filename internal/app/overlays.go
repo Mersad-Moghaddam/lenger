@@ -160,6 +160,9 @@ func (m *Model) cleanupOverlay() string {
 		groups[group.Kind] = group
 	}
 	for n, kind := range services.CleanupKinds() {
+		if m.resourcePrune && !m.cleanupSelected[kind] {
+			continue
+		}
 		group := groups[kind]
 		marker := "  "
 		if n == m.cleanupCursor {

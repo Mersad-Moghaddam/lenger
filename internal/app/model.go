@@ -171,6 +171,8 @@ type Model struct {
 	portContainer         string
 	grouped               bool
 	groupCursor           int
+	resourceScroll        int
+	resourcePrune         bool
 	groupCollapsed        map[string]bool
 	stackProject          string
 	stackIDs              []string
@@ -516,6 +518,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input.SetWidth(max(1, min(tokens.ModalWidth, m.width)-tokens.InsetX*4))
 		return m, nil
 	case snapshotMsg:
+		groupSelection := m.currentGroupedRow()
 		m.rememberContainerOrder()
 		selectedID := ""
 		before := m.containers()
@@ -537,6 +540,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 			}
+			m.restoreGroupedRow(groupSelection)
 			if cmd := m.rebindDrawerSelection(); cmd != nil {
 				return m, cmd
 			}
@@ -1073,6 +1077,7 @@ func (m *Model) activeFilter() string {
 }
 
 func (m *Model) setActiveFilter(value string) {
+	row := m.currentGroupedRow()
 	switch m.tab {
 	case 0:
 		m.containerFilter = value
@@ -1087,6 +1092,7 @@ func (m *Model) setActiveFilter(value string) {
 		m.networkFilter = value
 		m.networkCursor = 0
 	}
+	m.restoreGroupedRow(row)
 }
 
 func (m *Model) inspect() tea.Cmd {
@@ -1284,7 +1290,8 @@ func (m *Model) seedGalleryStats(batch store.Snapshot) {
 		percent := []float64{18.4, 7.1, 0.8}[n%3]
 		memory := []uint64{96_000_000, 512_000_000, 18_000_000}[n%3]
 		m.stats[c.ID] = engine.ContainerStats{
-			At: m.clock, SystemTotal: 1_000_000_000,
+			State: engine.TelemetrySampled,
+			At:    m.clock, SystemTotal: 1_000_000_000,
 			CPUTotal: uint64(1_000_000_000 / 100 * percent / 4), OnlineCPUs: 4,
 			Memory: memory, MemoryLimit: 1_000_000_000,
 			NetworkRX: memory / 2, NetworkTX: memory / 6,

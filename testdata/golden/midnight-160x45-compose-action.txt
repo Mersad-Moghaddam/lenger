@@ -5,11 +5,11 @@
 |  CONTAINERS  3                                                                                                                                               |
 |  filter —                                                                                                                                                    |
 |  > postgres-1               + running postgres:16                                                                                                            |
-|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · up 1d 0h                                                                                      |
-|    redis-1                  - exited redis:7.4                                                                                                               |
+|    cpu —  mem —  storefront · 5432/tcp · up 1d 0h                                                                                                            |
+|    redis-1                  - Exited (0) redis:7.4                                                                                                           |
 |    cpu —  mem —  storefront · 6379/tcp                                                                                                                       |
 |    web-1                    + running nginx:1.27-alpine                                                                                                      |
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp · up 3h 0m                                                                                   |
+|    cpu —  mem —  storefront · 8080->80/tcp · up 3h 0m                                                                                                        |
 |                                                                                                                                                              |
 |                                                                                                                                                              |
 |                                           +----------------------------------------------------------------------+                                           |

@@ -1,12 +1,14 @@
 package inspector
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
 )
 
 const logBufferCapacity = 10000
+const logBufferByteBudget = 16 * 1024 * 1024
 
 // LogBuffer is a zero-value-ready, concurrency-safe bounded chronological ring.
 // Copies of a LogBuffer must not be made after first use.
@@ -15,6 +17,7 @@ type LogBuffer struct {
 	entries     []engine.LogEntry
 	start, size int
 	total       uint64
+	textBytes   int
 }
 
 func (b *LogBuffer) Append(entry engine.LogEntry) {
@@ -23,12 +26,21 @@ func (b *LogBuffer) Append(entry engine.LogEntry) {
 	if b.entries == nil {
 		b.entries = make([]engine.LogEntry, logBufferCapacity)
 	}
-	b.entries[(b.start+b.size)%logBufferCapacity] = entry
-	if b.size == logBufferCapacity {
-		b.start = (b.start + 1) % logBufferCapacity
-	} else {
-		b.size++
+	// Engines other than Docker may provide oversized entries. Bound those too;
+	// clone to avoid retaining a large backing string behind a short substring.
+	if len(entry.Text) > logBufferByteBudget {
+		entry.Text = strings.Clone(entry.Text[:logBufferByteBudget-len(" [truncated]")]) + " [truncated]"
 	}
+	for b.size > 0 && (b.size == logBufferCapacity || b.textBytes+len(entry.Text) > logBufferByteBudget) {
+		b.textBytes -= len(b.entries[b.start].Text)
+		b.entries[b.start] = engine.LogEntry{}
+		b.start = (b.start + 1) % logBufferCapacity
+		b.size--
+	}
+	entry.Text = strings.Clone(entry.Text)
+	b.entries[(b.start+b.size)%logBufferCapacity] = entry
+	b.size++
+	b.textBytes += len(entry.Text)
 	b.total++
 }
 
@@ -51,6 +63,7 @@ func (b *LogBuffer) Clear() {
 	defer b.mu.Unlock()
 	clear(b.entries)
 	b.start, b.size = 0, 0
+	b.textBytes = 0
 }
 
 func (b *LogBuffer) sequence() uint64 { b.mu.RLock(); defer b.mu.RUnlock(); return b.total }

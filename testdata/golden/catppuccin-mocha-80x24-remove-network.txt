@@ -4,8 +4,8 @@
 +------------------------------------------------------------------------------+
 |  NETWORKS  4                                                                 |
 |  f+----------------------------------------------------------------------+   |
-|  >|  Confirm Network Removal                                             |   |
-|   |  TARGET NETWORK                                                      |   |
+|   |  Confirm Network Removal                                             |   |
+|  >|  TARGET NETWORK                                                      |   |
 |   |    bridge-id                                                         |   |
 |   |                                                                      |   |
 |   |  SAFETY CHECK                                                        |   |
@@ -19,6 +19,6 @@
 |                                                                              |
 |                                                                              |
 +------------------------------------------------------------------------------+
-c create  d remove  / filter  R refresh  q quit   v 0 jobs                      
+Enter assignments  c create  d remove  / filter  R refresh  q quit   v 0 jobs   
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

@@ -22,7 +22,7 @@ func actions() []action {
 		{"Images", "2", "docker image ls"},
 		{"Volumes", "3", "docker volume ls"},
 		{"Networks", "4", "docker network ls"},
-		{"Pull image", "p", "docker pull <reference>"},
+		{"Pull image", "pull-image", "docker pull <reference>"},
 		{"Run from image", "run-image", "docker run -d <image>"},
 		{"Start container", "x", "docker start <container>"},
 		{"Stop container", "s", "docker stop <container>"},
@@ -165,6 +165,9 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if k == "pull-image" {
+		return m.openInput("pull-input")
+	}
 	if strings.HasPrefix(k, "container:") {
 		id := strings.TrimPrefix(k, "container:")
 		statsCmd := m.switchTab(0)
@@ -205,7 +208,9 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	case "q":
 		return m.quit()
 	case "esc":
-		if m.tab == 0 && m.containerDetail {
+		if (m.tab == 2 || m.tab == 3) && m.detail {
+			m.detail = false
+		} else if m.tab == 0 && m.containerDetail {
 			m.containerDetail = false
 		} else if m.tab == 1 && m.detail {
 			m.detail = false
@@ -222,7 +227,10 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionPause, false)
 		}
-		return m.openInput("pull-input")
+		if m.tab == 1 || m.tab == 2 {
+			return m.openResourcePrune()
+		}
+		return nil
 	case "J":
 		m.overlay = "jobs"
 	case "R":
@@ -252,7 +260,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 				m.selected[id] = !m.selected[id]
 			}
 		}
-		if m.tab == 2 {
+		if m.tab == 0 {
 			items := m.containers()
 			if len(items) > 0 {
 				id := items[m.containerCursor].ID
@@ -260,6 +268,11 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			}
 		}
 	case "i", "enter":
+		if m.tab == 2 || m.tab == 3 {
+			m.detail = true
+			m.resourceScroll = 0
+			return nil
+		}
 		if m.tab == 1 {
 			return m.inspect()
 		}
@@ -376,6 +389,10 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 }
 
 func (m *Model) moveCursor(key string, delta int) {
+	if m.detail && (m.tab == 2 || m.tab == 3) {
+		m.resourceScroll = max(0, m.resourceScroll+delta)
+		return
+	}
 	switch m.tab {
 	case 0:
 		items := m.containers()
@@ -636,14 +653,23 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 			return nil
 		}
 		if k == "j" || k == "down" {
+			if m.resourcePrune {
+				return nil
+			}
 			m.cleanupCursor = min(len(services.CleanupKinds())-1, m.cleanupCursor+1)
 			return nil
 		}
 		if k == "k" || k == "up" {
+			if m.resourcePrune {
+				return nil
+			}
 			m.cleanupCursor = max(0, m.cleanupCursor-1)
 			return nil
 		}
 		if k == "space" || k == " " {
+			if m.resourcePrune {
+				return nil
+			}
 			kind := services.CleanupKinds()[m.cleanupCursor]
 			m.cleanupSelected[kind] = !m.cleanupSelected[kind]
 			return nil

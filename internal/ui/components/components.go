@@ -43,17 +43,22 @@ func Tabs(s style.Sheet, active, width int) string {
 
 // Pill combines an explicit status word and a non-color status indicator.
 func Pill(s style.Sheet, state string) string {
+	return StatusPill(s, state, state)
+}
+
+// StatusPill separates semantic severity from evidence-backed display text.
+func StatusPill(s style.Sheet, state, label string) string {
 	g := tokens.Icons(s.ASCII)
 	icon, role := g.Stopped, s.Palette.Muted
 	switch state {
 	case "running", "succeeded", "healthy":
 		icon, role = g.Running, s.Palette.Success
-	case "paused":
+	case "paused", "starting":
 		icon, role = g.Paused, s.Palette.Warning
-	case "failed", "unhealthy":
+	case "failed", "unhealthy", "restarting":
 		icon, role = g.Error, s.Palette.Danger
 	}
-	return s.Text(icon+" "+style.Clean(state), role)
+	return s.Text(icon+" "+style.Clean(label), role)
 }
 
 // StatusChip renders one daemon or resource state with a glyph, word and role.

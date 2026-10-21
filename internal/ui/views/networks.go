@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"charm.land/lipgloss/v2"
-
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/components"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/style"
@@ -15,27 +13,14 @@ import (
 
 // Networks renders Docker network list, IPAM configurations, and connected endpoints (NET-01).
 func Networks(s style.Sheet, items []engine.Network, cursor int, filter string, width, height int, now time.Time) string {
-	if len(items) == 0 {
-		return NetworkList(s, items, 0, filter, width, height, now)
-	}
-	cursor = max(0, min(cursor, len(items)-1))
-	if width < tokens.DetailWidth {
-		return NetworkList(s, items, cursor, filter, width, height, now)
-	}
-	left := width * 3 / 7
-	right := width - left - tokens.Gap
-	result := lipgloss.JoinHorizontal(lipgloss.Top,
-		NetworkList(s, items, cursor, filter, left, height, now),
-		strings.Repeat(" ", tokens.Gap),
-		NetworkDetail(s, items[cursor], right, height, now),
-	)
-	return style.Fit(result, width, height)
+	return NetworkList(s, items, cursor, filter, width, height, now)
 }
 
 // NetworkList renders the compact, sorted table of Docker networks.
 func NetworkList(s style.Sheet, items []engine.Network, cursor int, filter string, width, height int, _ time.Time) string {
-	lines := []string{s.Muted("filter " + emptyDash(filter))}
-	capacity := max(1, height-tokens.PanelFrame-tokens.InsetY*2-1)
+	nameWidth := max(6, (width-46)/3)
+	lines := []string{s.Muted("filter " + emptyDash(filter)), fmt.Sprintf("  %s %s %s %s %s %s", padCell("NAME", nameWidth), padCell("DRIVER", 8), padCell("SCOPE", 8), padCell("SUBNET", nameWidth), padCell("GATEWAY", nameWidth), "CONNECTED")}
+	capacity := max(1, height-tokens.PanelFrame-tokens.InsetY*2-2)
 	start := max(0, cursor-capacity+1)
 	end := min(len(items), start+capacity)
 	g := tokens.Icons(s.ASCII)
@@ -51,9 +36,8 @@ func NetworkList(s style.Sheet, items []engine.Network, cursor int, filter strin
 			driver = "-"
 		}
 		epCount := fmt.Sprintf("%d endpoints", len(net.Containers))
-		nameWidth := max(10, width-32)
 		name := padCell(style.Clean(net.Name), nameWidth)
-		line := fmt.Sprintf("%s %s %-8s %s", marker, name, style.Clean(driver), epCount)
+		line := fmt.Sprintf("%s %s %s %s %s %s %s", marker, name, padCell(style.Clean(driver), 8), padCell(style.Clean(net.Scope), 8), padCell(style.Clean(strings.Join(net.Subnets, ",")), nameWidth), padCell(style.Clean(strings.Join(net.Gateways, ",")), nameWidth), epCount)
 		if n == cursor {
 			line = s.Text(line, s.Palette.Accent)
 		}
@@ -68,6 +52,10 @@ func NetworkList(s style.Sheet, items []engine.Network, cursor int, filter strin
 
 // NetworkDetail renders network configuration, IPAM subnets, and attached containers.
 func NetworkDetail(s style.Sheet, net engine.Network, width, height int, now time.Time) string {
+	return s.Panel("NETWORK DETAIL", strings.Join(networkDetailLines(s, net, now), "\n"), width, height, false)
+}
+
+func networkDetailLines(s style.Sheet, net engine.Network, now time.Time) []string {
 	var lines []string
 	header := style.Clean(net.Name)
 	if net.Driver != "" {
@@ -119,15 +107,21 @@ func NetworkDetail(s style.Sheet, net engine.Network, width, height int, now tim
 			if ip == "" {
 				ip = "no IPv4"
 			}
-			lines = append(lines, fmt.Sprintf("%-16s %-18s %s",
+			lines = append(lines, fmt.Sprintf("%s  %s  %s  %s",
 				style.Clean(ep.Name),
 				style.Clean(ip),
+				style.Clean(ep.IPv6),
 				s.Muted(engine.ShortID(ep.ContainerID)),
 			))
 		}
 	}
 
 	lines = append(lines, "", s.Muted("c create · d remove · / filter"))
-	body := strings.Join(lines, "\n")
-	return s.Panel("NETWORK DETAIL", body, width, height, false)
+	return lines
+}
+
+// NetworkDetailRows returns unbounded sanitized content for the app viewport.
+// Wrapping happens before scrolling so long addresses never become inaccessible.
+func NetworkDetailRows(s style.Sheet, net engine.Network, width int, now time.Time) []string {
+	return detailRows(networkDetailLines(s, net, now), width)
 }

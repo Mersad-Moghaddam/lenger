@@ -5,11 +5,11 @@
 |  CONTAINERS  3                                                                                                       |
 |  filter —                                                                                                            |
 |  > postgres-1               + running postgres:16                                                                    |
-|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · up 1d 0h                                              |
-|    redis-1                  - exited redis:7.4                                                                       |
+|    cpu —  mem —  storefront · 5432/tcp · up 1d 0h                                                                    |
+|    redis-1                  - Exited (0) redis:7.4                                                                   |
 |    cpu —  mem —  store+----------------------------------------------------------------------+                       |
 |    web-1              |  Smart cleanup preview                                               |                       |
-|    cpu 18.4% +*+*+*+*+|  CLEANUP CHECKLIST                                                   |                       |
+|    cpu —  mem —  store|  CLEANUP CHECKLIST                                                   |                       |
 |                       |  Preview exactly what will be removed, then confirm.                 |                       |
 |                       |                                                                      |                       |
 |                       |  > [x] dangling-images        0        0 B                           |                       |

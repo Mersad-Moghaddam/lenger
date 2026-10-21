@@ -5,11 +5,11 @@
 |  CONTAINERS  3                        | Live Logs                                                                     
 |  filter —                             | Metrics                                                                       
 |  > postgres-1    + running postgres:  | Env & Ports                                                                   
-|    cpu  7.1% ++++*#*+*+  mem 512.0 M  | Timeline                                                                      
-|    redis-1       - exited redis:7.4   |   1. Previous instance logs                                                   
+|    cpu —  mem —  storefront · 5432/t  | Timeline                                                                      
+|    redis-1       - Exited (0) redis:  |   1. Previous instance logs                                                   
 |    cpu —  mem —  storefront · 6379/t  | > 2. Restart container                                                        
 |    web-1         + running nginx:1.2  |   3. Healthcheck command / evidence                                           
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  | [Docker Engine Inspect]                                                       
+|    cpu —  mem —  storefront · 8080->  | [Docker Engine Inspect]                                                       
 |                                       | State: running                                                                
 |                                       | Health: healthy                                                               
 |                                       | ExitCode: 0 · OOMKilled: false                                                

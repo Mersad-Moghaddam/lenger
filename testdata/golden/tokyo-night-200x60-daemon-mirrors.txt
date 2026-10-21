@@ -55,6 +55,6 @@
 |                                                                |  |                                                              |  |                                                                |
 |                                                                |  |                                                              |  |                                                                |
 +----------------------------------------------------------------+  +--------------------------------------------------------------+  +----------------------------------------------------------------+
-p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   v 0 jobs                                                                                                                
+p prune dangling  r run  i inspect  d remove  o sort  / filter  space select  : pull   v 0 jobs                                                                                                         
 Local daemon. No accounts. No telemetry.                                                                                                                                                                
                                                                                                                                                                                                         

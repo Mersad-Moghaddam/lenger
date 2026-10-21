@@ -56,6 +56,9 @@ func (m *Model) envVisualRows(w int) ([]string, []int) {
 			}
 		} else {
 			add("Display only: no safe HTTP preview", -1)
+			if warning := inspector.PortExposureWarning(p); warning != "" {
+				add(warning, -1)
+			}
 		}
 	}
 	return rows, owners

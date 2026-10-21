@@ -4,7 +4,9 @@ import (
 	"charm.land/lipgloss/v2"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -56,28 +58,36 @@ func ContainerList(s style.Sheet, items []engine.Container, cursor int, selected
 		if selected[c.ID] {
 			marker = g.Selected
 		}
-		state := c.State
-		if c.Health == "unhealthy" || c.State == "dead" {
-			state = "unhealthy"
-		}
+		state, status := listContainerStatus(c)
 		nameWidth := max(8, min(24, width/3))
 		imageWidth := max(8, width-nameWidth-19)
 		name := padCell(style.Clean(c.Name), nameWidth)
 		image := padCell(style.Clean(c.Image), imageWidth)
-		line := fmt.Sprintf("%s %s %s %s", marker, name, components.Pill(s, state), image)
+		if status == "" {
+			status = state
+		}
+		pill := components.StatusPill(s, state, status)
+		line := fmt.Sprintf("%s %s %s %s", marker, name, pill, image)
 		if n == cursor {
 			line = s.Text(line, s.Palette.Accent)
 		}
 		lines = append(lines, line)
 		if rowHeight == 2 {
 			resource := "cpu —  mem —"
-			if sample, ok := stats[c.ID]; ok {
+			if sample, ok := stats[c.ID]; ok && sample.Current(c.State, now) {
 				cpuText := "  — "
-				if percent, sampled := cpu[c.ID]; sampled {
+				if percent, sampled := cpu[c.ID]; sampled && sample.CPUAvailable {
 					cpuText = fmt.Sprintf("%4.1f%%", percent)
 				}
-				spark := chart.Sparkline(history[c.ID], 10, s.ASCII)
-				resource = fmt.Sprintf("cpu %s %s  mem %s", cpuText, spark, components.Bytes(int64(sample.Memory)))
+				spark := ""
+				if sample.CPUAvailable {
+					spark = chart.Sparkline(history[c.ID], 10, s.ASCII)
+				}
+				memory := "—"
+				if sample.MemoryAvailable {
+					memory = components.Bytes(int64(sample.Memory))
+				}
+				resource = fmt.Sprintf("cpu %s %s  mem %s", cpuText, spark, memory)
 			}
 			context := []string{}
 			if c.Project != "" {
@@ -107,6 +117,35 @@ func ContainerList(s style.Sheet, items []engine.Container, cursor int, selected
 		return s.Panel("CONTAINERS  0", components.Empty(s, "No containers at anchor.", next, max(1, width-tokens.PanelFrame-tokens.InsetX*2)), width, height, true)
 	}
 	return s.Panel(fmt.Sprintf("CONTAINERS  %d", len(items)), strings.Join(lines, "\n"), width, height, true)
+}
+
+var exitStatusPattern = regexp.MustCompile(`^Exited \(([0-9]+)\)(?: |$)`)
+
+// Docker list status is evidence only when its canonical exit form is present;
+// missing/unknown status must not manufacture an exit code of zero.
+func listContainerStatus(c engine.Container) (string, string) {
+	if c.State == "restarting" {
+		return "restarting", ""
+	}
+	if c.State == "dead" || c.Health == "unhealthy" {
+		return "unhealthy", ""
+	}
+	if c.Health == "starting" || c.State == "created" {
+		return "starting", ""
+	}
+	if c.State == "exited" {
+		if match := exitStatusPattern.FindStringSubmatch(c.Status); match != nil {
+			code, err := strconv.Atoi(match[1])
+			if err == nil {
+				role := "exited"
+				if code != 0 {
+					role = "failed"
+				}
+				return role, fmt.Sprintf("Exited (%d)", code)
+			}
+		}
+	}
+	return c.State, ""
 }
 
 // ContainerDetail renders structured metadata first and optional masked JSON.

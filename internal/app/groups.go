@@ -60,6 +60,8 @@ func (m *Model) groupKey(k string) (bool, tea.Cmd) {
 			if m.focus.DrawerOpen {
 				return true, m.openDrawer()
 			}
+		} else if m.focus.DrawerOpen {
+			m.closeDrawer()
 		}
 		return true, nil
 	}
@@ -83,7 +85,7 @@ func (m *Model) groupKey(k string) (bool, tea.Cmd) {
 		}
 		m.stackProject = row.project
 		m.stackIDs = nil
-		for _, g := range groups.GroupByCompose(m.containers()) {
+		for _, g := range groups.GroupByCompose(m.store.Containers) {
 			if g.Project == row.project {
 				for _, c := range g.Services {
 					m.stackIDs = append(m.stackIDs, c.ID)
@@ -98,6 +100,63 @@ func (m *Model) groupKey(k string) (bool, tea.Cmd) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func (m *Model) currentGroupedRow() groupedRow {
+	rows := m.groupedRows()
+	if !m.grouped || len(rows) == 0 {
+		return groupedRow{}
+	}
+	return rows[max(0, min(m.groupCursor, len(rows)-1))]
+}
+
+// Keep headers distinct from service IDs. A vanished service falls back to its
+// project header, then the nearest surviving row. Rebind the flat action cursor
+// before drawer reconciliation so highlight and action identity cannot diverge.
+func (m *Model) restoreGroupedRow(want groupedRow) {
+	if !m.grouped {
+		return
+	}
+	rows := m.groupedRows()
+	if len(rows) == 0 {
+		m.groupCursor = 0
+		return
+	}
+	index := -1
+	for i, row := range rows {
+		if row == want || (want.id != "" && row.id == want.id) {
+			index = i
+			break
+		}
+	}
+	if index < 0 {
+		for i, row := range rows {
+			if row.project == want.project && row.id == "" {
+				index = i
+				break
+			}
+		}
+	}
+	if index < 0 {
+		index = max(0, min(m.groupCursor, len(rows)-1))
+		for index > 0 && rows[index].id != "" {
+			index--
+		}
+	}
+	m.groupCursor = index
+	row := rows[index]
+	if row.id == "" {
+		if m.focus.DrawerOpen {
+			m.closeDrawer()
+		}
+		return
+	}
+	for i, c := range m.containers() {
+		if c.ID == row.id {
+			m.containerCursor = i
+			break
+		}
+	}
 }
 func (m *Model) renderGroupedList(w, h int) string {
 	rows := m.groupedRows()

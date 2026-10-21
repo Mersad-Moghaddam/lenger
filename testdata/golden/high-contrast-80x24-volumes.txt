@@ -4,11 +4,11 @@
 +------------------------------------------------------------------------------+
 |  VOLUMES  4                                                                  |
 |  filter —                                                                    |
-|  > postgres-data                                          1.4 GB 1 refs      |
-|    redis-data                                            96.0 MB 1 refs      |
-|    scratch-data                                          64.0 MB 0 refs      |
-|    web-content                                          320.0 MB 1 refs      |
-|                                                                              |
+|    DRIVER     VOLUME          MOUNT POINT     CONTAINERS           SIZE      |
+|  > local      postgres-data   /var/lib/docker postgres-1         1.4 GB      |
+|    local      redis-data      /var/lib/docker redis-1           96.0 MB      |
+|    local      scratch-data    /var/lib/docker 0 refs            64.0 MB      |
+|    local      web-content     /var/lib/docker web-1            320.0 MB      |
 |                                                                              |
 |                                                                              |
 |                                                                              |
@@ -19,6 +19,6 @@
 |                                                                              |
 |                                                                              |
 +------------------------------------------------------------------------------+
-d remove unused  / filter  c cleanup  R refresh   v 0 jobs                      
+p prune unused  d remove  Enter details  / filter  c cleanup  R refresh   v 0 jo
 Local daemon. No accounts. No telemetry.                                        
                                                                                 
