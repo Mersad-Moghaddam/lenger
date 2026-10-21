@@ -1,12 +1,15 @@
 # Contributing to Lenger
 
-Lenger is an early, unverified Go TUI skeleton. Do not use it for critical
-container workloads or assume a green CI status that has not been demonstrated.
+Lenger is a Docker TUI with offline fixtures and automated checks. Test changes
+against disposable workloads; do not assume that fixtures or a prior green CI
+run verify a different commit or production Docker integration.
 
 ## Start here
 
 Read `docs/ARCHITECTURE.md` for boundaries, `docs/UX.md` for rendering conventions,
-and `docs/DECISIONS.md` for known gaps. `docs/PRD.md` is the product source of truth.
+and `docs/DECISIONS.md` for known gaps. The approved redesign in
+`docs/superpowers/specs/2026-10-21-lenger-redesign.md` defines the container-first
+four-resource / five-inspector target; older product docs may describe prior UI.
 
 Keep pull requests focused on one behavior. Add regression tests for fixes,
 avoid new dependencies where the standard library suffices, and explain policy
@@ -15,17 +18,21 @@ changes (especially deletion, credentials, or remote-daemon selection).
 ## Development commands
 
 ```sh
-go mod tidy
-gofmt -w cmd internal
+go mod download
+go fmt ./cmd/... ./internal/...
 make build
 make test
 make lint
 ```
 
-Gallery baselines are not yet committed. See `testdata/README.md` before
-establishing them. Never update snapshots simply to hide a rendering regression.
-CI is manually dispatched during this coding-only stage; it is not evidence of
-release readiness. Real Docker integration needs an explicitly authorized,
+Gallery baselines are committed under `testdata/golden`. Render and review the
+gallery before intentionally updating them with
+`go test ./internal/gallery -run TestGolden -update`; never update snapshots
+simply to hide a rendering regression. Run `make check` without update flags.
+CI runs automatically for main pushes and pull requests, supports manual runs,
+and is reused by the tag-release verification gate. A configured workflow is not
+evidence of a successful run; inspect results for the exact commit. Real Docker
+integration needs an explicitly authorized,
 disposable daemon and must never target a contributor's production containers.
 
 ## Code conventions

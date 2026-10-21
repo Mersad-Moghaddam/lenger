@@ -24,6 +24,13 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/theme"
 )
 
+// Build metadata is overridden by release and source-build linker flags.
+var (
+	version = "dev"
+	commit  = "unknown"
+	date    = "unknown"
+)
+
 func main() {
 	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, "lenger:", err)
@@ -38,6 +45,7 @@ func run() error {
 		return nil
 	}
 	flags := flag.NewFlagSet("lenger", flag.ContinueOnError)
+	versionFlag := flags.Bool("version", false, "print version and build metadata without initializing Docker")
 	galleryFlag := flags.Bool("gallery", false, "render offline gallery without Docker")
 	themeFlag := flags.String("theme", "", "bundled theme name or omarchy")
 	sizeFlag := flags.String("size", "", "terminal viewport, e.g. 120x40")
@@ -55,6 +63,10 @@ func run() error {
 	}
 	if flags.NArg() != 0 {
 		return fmt.Errorf("unexpected arguments: %v", flags.Args())
+	}
+	if *versionFlag {
+		fmt.Printf("lenger %s (commit %s, built %s)\n", version, commit, date)
+		return nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

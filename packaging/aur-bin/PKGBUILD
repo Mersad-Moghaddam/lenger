@@ -1,6 +1,7 @@
 # Maintainer: Mersad Moghaddam <https://github.com/Mersad-Moghaddam>
+# UNPUBLISHED TEMPLATE: replace all SKIP entries with verified release-archive SHA-256 before AUR publication.
 pkgname=lenger-bin
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Fast, low-ceremony TUI for Docker images, registries, and containers (prebuilt binary)"
 arch=('x86_64' 'aarch64' 'armv7h')

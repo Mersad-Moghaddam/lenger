@@ -1,6 +1,7 @@
 # Maintainer: Mersad Moghaddam <https://github.com/Mersad-Moghaddam>
+# UNPUBLISHED TEMPLATE: replace SKIP with verified release-source SHA-256 before AUR publication.
 pkgname=lenger
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Fast, low-ceremony TUI for Docker images, registries, and containers"
 arch=('x86_64' 'aarch64' 'armv7h')
@@ -15,10 +16,8 @@ optdepends=(
     'grype: alternative vulnerability scanning'
 )
 install=lenger.install
-source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz"
-        "lenger.desktop")
-sha256sums=('SKIP'
-            'SKIP')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
 
 build() {
     cd "$pkgname-$pkgver"
@@ -30,7 +29,7 @@ build() {
 package() {
     cd "$pkgname-$pkgver"
     install -Dm755 build/lenger "$pkgdir/usr/bin/lenger"
-    install -Dm644 "$srcdir/lenger.desktop" "$pkgdir/usr/share/applications/lenger.desktop"
+    install -Dm644 packaging/lenger.desktop "$pkgdir/usr/share/applications/lenger.desktop"
     if [ -f LICENSE ]; then
         install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     fi

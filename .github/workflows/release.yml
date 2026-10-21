@@ -6,15 +6,46 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
+  validate-tag:
+    name: Validate stable tag and exact commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Require a stable semantic version tag on this commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == refs/tags/* ]]
+          tag="${GITHUB_REF#refs/tags/}"
+          [[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+            echo "Stable releases require vMAJOR.MINOR.PATCH (no leading zeros or prerelease suffix)." >&2
+            exit 1
+          }
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$(git rev-parse "$GITHUB_REF^{commit}")" = "$GITHUB_SHA"
+
+  verify:
+    name: Verify exact tagged commit
+    needs: validate-tag
+    uses: ./.github/workflows/ci.yml
+
   release:
     name: Build and Release
+    needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -24,8 +55,11 @@ jobs:
 
       - name: Build binaries
         run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           TAG_NAME="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG_NAME#v}"
+          BUILD_DATE="$(git show -s --format=%cI HEAD)"
           mkdir -p dist
 
           targets=(
@@ -52,7 +86,7 @@ jobs:
 
             GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build \
               -trimpath \
-              -ldflags="-s -w -X main.version=$VERSION" \
+              -ldflags="-s -w -X main.version=$VERSION -X main.commit=$GITHUB_SHA -X main.date=$BUILD_DATE" \
               -o "$build_dir/lenger" ./cmd/lenger
 
             cp packaging/lenger.desktop "$build_dir/"
@@ -65,11 +99,14 @@ jobs:
 
           cd dist
           sha256sum lenger_* > SHA256SUMS
+          sha256sum --check SHA256SUMS
           cd ..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: |
             dist/*
           generate_release_notes: true
