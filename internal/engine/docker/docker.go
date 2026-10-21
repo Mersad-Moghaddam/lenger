@@ -52,7 +52,25 @@ func (e *Engine) ListContainers(ctx context.Context) ([]engine.Container, error)
 		if len(c.Names) > 0 {
 			name = strings.TrimPrefix(c.Names[0], "/")
 		}
-		items = append(items, engine.Container{ID: c.ID, Name: name, ImageID: c.ImageID, Image: c.Image, State: string(c.State), Status: c.Status, Labels: c.Labels})
+		health := ""
+		if c.Health != nil {
+			health = string(c.Health.Status)
+		}
+		ports := make([]string, 0, len(c.Ports))
+		for _, p := range c.Ports {
+			ports = append(ports, formatPortSummary(p))
+		}
+		mounts := make([]engine.Mount, 0, len(c.Mounts))
+		for _, m := range c.Mounts {
+			mounts = append(mounts, engine.Mount{Type: string(m.Type), Name: m.Name, Source: m.Source, Destination: m.Destination, Mode: m.Mode, RW: m.RW})
+		}
+		items = append(items, engine.Container{
+			ID: c.ID, Name: name, ImageID: c.ImageID, Image: c.Image,
+			State: string(c.State), Status: c.Status, Health: health,
+			Created: time.Unix(c.Created, 0), Ports: ports, Mounts: mounts,
+			Project: c.Labels["com.docker.compose.project"], Service: c.Labels["com.docker.compose.service"],
+			Labels: c.Labels,
+		})
 	}
 	return items, nil
 }

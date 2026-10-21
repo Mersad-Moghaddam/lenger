@@ -38,11 +38,93 @@ func ShortID(id string) string {
 	return id
 }
 
-// Container is the lightweight information needed for counts and image usage.
+// Container is the lightweight information needed by lists and usage indices.
 type Container struct {
-	ID, Name, ImageID, Image, State, Status string
-	Labels                                  map[string]string
+	ID, Name, ImageID, Image, State, Status, Health string
+	Created                                         time.Time
+	Ports                                           []string
+	Mounts                                          []Mount
+	Project, Service                                string
+	Labels                                          map[string]string
 }
+
+// Running reports whether the container has a live main process.
+func (c Container) Running() bool {
+	return c.State == "running" || c.State == "paused" || c.State == "restarting"
+}
+
+// Mount is a named volume or bind mount visible without inspecting a container.
+type Mount struct {
+	Type, Name, Source, Destination, Mode string
+	RW                                    bool
+}
+
+// ContainerInspection is structured, SDK-independent container metadata.
+type ContainerInspection struct {
+	ID, Name, Image, ImageID, Platform          string
+	State, Health, Status, NetworkMode, Restart string
+	Created, StartedAt, FinishedAt              time.Time
+	ExitCode, RestartCount                      int
+	OOMKilled, TTY                              bool
+	Env, Entrypoint, Command, Ports             []string
+	Networks                                    []string
+	Mounts                                      []Mount
+	Labels                                      map[string]string
+}
+
+// RunSpec contains the options exposed by the run-from-image wizard.
+type RunSpec struct {
+	Name, Image, Network, Restart string
+	Command, Ports, Env, Volumes  []string
+}
+
+// LogOptions controls one bounded or following container log stream.
+type LogOptions struct {
+	Follow bool
+	Tail   int
+}
+
+// LogEntry is one demultiplexed log line with its optional daemon timestamp.
+type LogEntry struct {
+	At           time.Time
+	Stream, Text string
+}
+
+// Volume is a daemon volume summary with usage data when the daemon supplies it.
+type Volume struct {
+	Name, Driver, Mountpoint, Scope string
+	CreatedAt                       time.Time
+	Size                            int64
+	RefCount                        int
+	Labels                          map[string]string
+	UsedBy                          []Container
+}
+
+// UsageCategory is one row in the disk-usage breakdown.
+type UsageCategory struct {
+	Total, Active int
+	Size          int64
+	Reclaimable   int64
+}
+
+// SystemUsage is the daemon disk-usage snapshot used by the soundings panel.
+type SystemUsage struct {
+	Images, Containers, Volumes, BuildCache UsageCategory
+	Used, Reclaimable                       int64
+}
+
+// ContainerAction is a safe, non-forced lifecycle operation.
+type ContainerAction string
+
+const (
+	ActionStart   ContainerAction = "start"
+	ActionStop    ContainerAction = "stop"
+	ActionRestart ContainerAction = "restart"
+	ActionPause   ContainerAction = "pause"
+	ActionUnpause ContainerAction = "unpause"
+	ActionKill    ContainerAction = "kill"
+	ActionRemove  ContainerAction = "remove"
+)
 
 // Layer records an image history entry, including metadata-only entries.
 type Layer struct {
@@ -78,6 +160,17 @@ type Engine interface {
 	InspectImage(context.Context, string) (Inspection, error)
 	RemoveImage(context.Context, string) error
 	Pull(context.Context, string, func(Progress) error) error
+
+	ListVolumes(context.Context) ([]Volume, error)
+	RemoveVolume(context.Context, string) error
+	SystemUsage(context.Context) (SystemUsage, error)
+
+	InspectContainer(context.Context, string) (ContainerInspection, error)
+	CreateContainer(context.Context, RunSpec) (string, error)
+	ActContainer(context.Context, string, ContainerAction) error
+	Logs(context.Context, string, LogOptions, func(LogEntry) error) error
+	PruneBuildCache(context.Context) (int64, error)
+
 	Events(context.Context, func(Event) error) error
 	Close() error
 }

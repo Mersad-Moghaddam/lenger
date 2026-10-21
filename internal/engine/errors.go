@@ -35,6 +35,16 @@ func Classify(err error) *ClassifiedError {
 		category, message, next = "cancelled", "Operation cancelled.", "Retry when ready."
 	case strings.Contains(text, "permission denied"):
 		category, message, next = "permission", "Docker socket access was denied.", "sudo usermod -aG docker \"$USER\"; then log out and back in. The docker group grants root-equivalent access."
+	case strings.Contains(text, "no such container"), strings.Contains(text, "container not found"):
+		category, message, next = "not-found", "The container was not found.", "Refresh the list; it may have been removed by another client."
+	case strings.Contains(text, "no such volume"), strings.Contains(text, "volume not found"):
+		category, message, next = "not-found", "The volume was not found.", "Refresh the list; it may have been removed by another client."
+	case strings.Contains(text, "already in use"), strings.Contains(text, "already allocated"), strings.Contains(text, "address already in use"):
+		category, message, next = "conflict", "That name or port is already in use.", "Choose another name or host port, or remove the existing resource."
+	case strings.Contains(text, "is in use by"), strings.Contains(text, "volume is in use"), strings.Contains(text, "cannot remove a running container"):
+		category, message, next = "in-use", "The resource is still in use.", "Stop or remove the dependent resource first."
+	case strings.Contains(text, "is not running"), strings.Contains(text, "container is paused"):
+		category, message, next = "state", "The container is not in a state that allows this action.", "Refresh the list and choose an action valid for its current state."
 	case strings.Contains(text, "429"), strings.Contains(text, "toomanyrequests"), strings.Contains(text, "rate limit"):
 		category, message, next = "rate-limit", "The registry rate limit was reached.", "Wait before retrying or use docker login."
 	case strings.Contains(text, "unauthorized"), strings.Contains(text, "authentication required"), strings.Contains(text, "401"):

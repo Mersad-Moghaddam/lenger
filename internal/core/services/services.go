@@ -20,7 +20,12 @@ import (
 // Service owns application policy, leaving SDK types inside adapters.
 type Service struct{ engine engine.Engine }
 
-const operationTimeout = 10 * time.Second
+const (
+	operationTimeout = 10 * time.Second
+	actionTimeout    = 30 * time.Second
+	runTimeout       = 60 * time.Second
+	usageTimeout     = 30 * time.Second
+)
 
 // New wraps a real or fake engine with the same policy.
 func New(e engine.Engine) *Service { return &Service{engine: e} }
@@ -30,11 +35,12 @@ func (s *Service) Snapshot(ctx context.Context) (store.Snapshot, error) {
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 	var result store.Snapshot
-	var imageErr, containerErr error
+	var imageErr, containerErr, volumeErr error
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(3)
 	go func() { defer wg.Done(); result.Images, imageErr = s.engine.ListImages(ctx) }()
 	go func() { defer wg.Done(); result.Containers, containerErr = s.engine.ListContainers(ctx) }()
+	go func() { defer wg.Done(); result.Volumes, volumeErr = s.engine.ListVolumes(ctx) }()
 	wg.Wait()
 	if imageErr != nil {
 		return result, engine.Classify(imageErr)
@@ -42,6 +48,10 @@ func (s *Service) Snapshot(ctx context.Context) (store.Snapshot, error) {
 	if containerErr != nil {
 		return result, engine.Classify(containerErr)
 	}
+	if volumeErr != nil {
+		return result, engine.Classify(volumeErr)
+	}
+	fillVolumeUsers(result.Volumes, result.Containers)
 	return result, nil
 }
 

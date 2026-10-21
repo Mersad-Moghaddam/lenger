@@ -4,6 +4,7 @@ package fake
 import (
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"sync"
 	"time"
@@ -16,9 +17,11 @@ type Engine struct {
 	mu         sync.Mutex
 	images     []engine.Image
 	containers []engine.Container
+	volumes    []engine.Volume
+	buildCache int64
 	subs       map[uint64]chan engine.Event
 	next       uint64
-	// Delay controls the scripted pull cadence; zero produces immediate progress.
+	// Delay controls the scripted pull and follow-log cadence; zero is immediate.
 	Delay time.Duration
 	// PullError injects a pull failure before progress starts.
 	PullError error
@@ -31,11 +34,21 @@ func New() *Engine {
 		name string
 		size int64
 	}{{"nginx:1.27-alpine", 48}, {"postgres:16", 432}, {"redis:7.4", 117}, {"golang:1.23", 843}, {"node:22-slim", 241}, {"ubuntu:24.04", 78}}
-	e := &Engine{subs: make(map[uint64]chan engine.Event), Delay: 80 * time.Millisecond}
+	e := &Engine{subs: make(map[uint64]chan engine.Event), Delay: 80 * time.Millisecond, buildCache: 700_000_000}
 	for n, r := range refs {
 		e.images = append(e.images, engine.Image{ID: fmt.Sprintf("sha256:%064x", n+1), RepoTags: []string{r.name}, Size: r.size * 1000 * 1000, Created: now.Add(-time.Duration(n+1) * 24 * time.Hour)})
 	}
-	e.containers = []engine.Container{{ID: "web1", Name: "web-1", ImageID: e.images[0].ID, Image: e.images[0].Name(), State: "running", Status: "Up 3 hours"}, {ID: "db1", Name: "postgres-1", ImageID: e.images[1].ID, Image: e.images[1].Name(), State: "running", Status: "Up 1 day"}, {ID: "redis1", Name: "redis-1", ImageID: e.images[2].ID, Image: e.images[2].Name(), State: "exited", Status: "Exited (0)"}}
+	e.volumes = []engine.Volume{
+		{Name: "web-content", Driver: "local", Mountpoint: "/var/lib/docker/volumes/web-content/_data", Scope: "local", CreatedAt: now.Add(-72 * time.Hour), Size: 320_000_000, RefCount: 1},
+		{Name: "postgres-data", Driver: "local", Mountpoint: "/var/lib/docker/volumes/postgres-data/_data", Scope: "local", CreatedAt: now.Add(-240 * time.Hour), Size: 1_420_000_000, RefCount: 1},
+		{Name: "redis-data", Driver: "local", Mountpoint: "/var/lib/docker/volumes/redis-data/_data", Scope: "local", CreatedAt: now.Add(-120 * time.Hour), Size: 96_000_000, RefCount: 1},
+		{Name: "scratch-data", Driver: "local", Mountpoint: "/var/lib/docker/volumes/scratch-data/_data", Scope: "local", CreatedAt: now.Add(-12 * time.Hour), Size: 64_000_000, RefCount: 0},
+	}
+	e.containers = []engine.Container{
+		{ID: "web1", Name: "web-1", ImageID: e.images[0].ID, Image: e.images[0].Name(), State: "running", Status: "Up 3 hours", Health: "healthy", Created: now.Add(-3 * time.Hour), Ports: []string{"8080->80/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "web-content", Source: "/var/lib/docker/volumes/web-content/_data", Destination: "/usr/share/nginx/html", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "web"}, Project: "storefront", Service: "web"},
+		{ID: "db1", Name: "postgres-1", ImageID: e.images[1].ID, Image: e.images[1].Name(), State: "running", Status: "Up 1 day", Health: "healthy", Created: now.Add(-24 * time.Hour), Ports: []string{"5432/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "postgres-data", Source: "/var/lib/docker/volumes/postgres-data/_data", Destination: "/var/lib/postgresql/data", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "db"}, Project: "storefront", Service: "db"},
+		{ID: "redis1", Name: "redis-1", ImageID: e.images[2].ID, Image: e.images[2].Name(), State: "exited", Status: "Exited (0)", Created: now.Add(-48 * time.Hour), Ports: []string{"6379/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "redis-data", Source: "/var/lib/docker/volumes/redis-data/_data", Destination: "/data", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "cache"}, Project: "storefront", Service: "cache"},
+	}
 	return e
 }
 
@@ -55,14 +68,21 @@ func (e *Engine) ListImages(ctx context.Context) ([]engine.Image, error) {
 	return result, nil
 }
 
-// ListContainers returns a copy of the fixture containers.
+// ListContainers returns a detached copy of the fixture containers.
 func (e *Engine) ListContainers(ctx context.Context) ([]engine.Container, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	return slices.Clone(e.containers), nil
+	result := make([]engine.Container, len(e.containers))
+	copy(result, e.containers)
+	for n := range result {
+		result[n].Labels = maps.Clone(result[n].Labels)
+		result[n].Ports = slices.Clone(result[n].Ports)
+		result[n].Mounts = slices.Clone(result[n].Mounts)
+	}
+	return result, nil
 }
 
 // InspectImage returns scripted metadata containing a deliberately masked secret.
