@@ -50,6 +50,20 @@ func (s *Service) InspectContainer(ctx context.Context, id string) (engine.Conta
 	return i, nil
 }
 
+// ContainerStats returns one bounded, measured resource sample.
+func (s *Service) ContainerStats(ctx context.Context, id string) (engine.ContainerStats, error) {
+	if id == "" {
+		return engine.ContainerStats{}, fmt.Errorf("container ID is required")
+	}
+	ctx, cancel := context.WithTimeout(ctx, statsTimeout)
+	defer cancel()
+	stats, err := s.engine.ContainerStats(ctx, id)
+	if err != nil {
+		return engine.ContainerStats{}, engine.Classify(err)
+	}
+	return stats, nil
+}
+
 // ActContainers performs safe lifecycle actions with a deadline per resource.
 // Removal never forces a running container or deletes its volumes.
 func (s *Service) ActContainers(ctx context.Context, ids []string, action engine.ContainerAction) map[string]error {

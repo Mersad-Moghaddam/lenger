@@ -4,9 +4,11 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"fmt"
 	"github.com/Mersad-Moghaddam/lenger/internal/core/services"
+	"github.com/Mersad-Moghaddam/lenger/internal/engine"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/components"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/tokens"
 	"github.com/sahilm/fuzzy"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -14,12 +16,35 @@ import (
 type action struct{ name, key, command string }
 
 func actions() []action {
-	return []action{{"Dashboard", "1", ""}, {"Images", "2", "docker image ls"}, {"Pull image", "p", "docker pull <reference>"}, {"Inspect image", "i", "docker image inspect <id>"}, {"Remove images", "d", "docker image rm <id>"}, {"Filter images", "/", "docker image ls"}, {"Refresh resources", "R", "docker image ls; docker ps -a"}, {"Job history", "J", ""}, {"Help", "?", ""}}
+	return []action{
+		{"Dashboard", "1", ""},
+		{"Images", "2", "docker image ls"},
+		{"Containers", "3", "docker ps -a"},
+		{"Volumes", "5", "docker volume ls"},
+		{"System disk usage", "7", "docker system df"},
+		{"Pull image", "p", "docker pull <reference>"},
+		{"Run from image", "run-image", "docker run -d <image>"},
+		{"Start container", "x", "docker start <container>"},
+		{"Stop container", "s", "docker stop <container>"},
+		{"Restart container", "r", "docker restart <container>"},
+		{"Logs", "l", "docker logs -f <container>"},
+		{"Exec shell", "e", "docker exec -it <container> sh"},
+		{"Inspect", "i", "docker inspect <resource>"},
+		{"Remove", "d", "docker rm <container> / docker image rm <image>"},
+		{"Smart cleanup", "cleanup", "docker system df"},
+		{"Filter list", "/", "filter current resources"},
+		{"Refresh resources", "R", "docker ps -a; docker image ls; docker volume ls"},
+		{"Job history", "J", ""},
+		{"Help", "?", ""},
+	}
 }
 func (m *Model) paletteActions() []action {
 	all := actions()
 	for _, image := range m.items() {
 		all = append(all, action{"Image: " + image.Name(), "image:" + image.ID, "docker image inspect " + image.ID})
+	}
+	for _, container := range m.containers() {
+		all = append(all, action{"Container: " + container.Name, "container:" + container.ID, "docker inspect " + container.ID})
 	}
 	if m.input.Value() == "" {
 		return all
@@ -43,12 +68,22 @@ func (m *Model) openInput(kind string) tea.Cmd {
 		m.input.Placeholder = "redis:7.4"
 	}
 	if kind == "filter" {
-		m.input.SetValue(m.filter)
+		m.input.SetValue(m.activeFilter())
+	}
+	if kind == "log-filter" {
+		m.input.SetValue(m.logsFilter)
+		m.input.Placeholder = "error|timeout|regex"
 	}
 	m.paletteCursor = 0
 	return m.input.Focus()
 }
-func (m *Model) closeOverlay() { m.overlay = ""; m.input.Blur() }
+func (m *Model) closeOverlay() {
+	if m.overlay == "logs" {
+		m.stopLogs()
+	}
+	m.overlay = ""
+	m.input.Blur()
+}
 
 func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	k := msg.String()
@@ -86,19 +121,39 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if strings.HasPrefix(k, "container:") {
+		id := strings.TrimPrefix(k, "container:")
+		m.tab = 2
+		for n, c := range m.containers() {
+			if c.ID == id {
+				m.containerCursor = n
+				return tea.Batch(m.inspectContainer(), m.loadStats())
+			}
+		}
+		return nil
+	}
 	if number, err := strconv.Atoi(k); err == nil && number >= 1 && number <= 7 {
 		m.tab = number - 1
 		m.detail = false
+		m.containerDetail = false
+		if m.tab == 6 {
+			return m.loadUsage()
+		}
+		if m.tab == 2 {
+			return m.loadStats()
+		}
 		return nil
 	}
 	switch k {
 	case "q":
 		return m.quit()
 	case "esc":
-		if m.detail {
+		if m.tab == 2 && m.containerDetail {
+			m.containerDetail = false
+		} else if m.tab == 1 && m.detail {
 			m.detail = false
-		} else if m.filter != "" {
-			m.filter = ""
+		} else if m.activeFilter() != "" {
+			m.setActiveFilter("")
 			m.clamp()
 		}
 		return nil
@@ -107,47 +162,37 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	case ":", "ctrl+p":
 		return m.openInput("palette")
 	case "p":
+		if m.tab == 2 {
+			return m.triggerContainerAction(engine.ActionPause, false)
+		}
 		return m.openInput("pull-input")
 	case "J":
 		m.overlay = "jobs"
 	case "R":
-		if !m.refreshing {
-			return m.refresh()
+		cmds := []tea.Cmd{m.refresh()}
+		if m.tab == 6 {
+			cmds = append(cmds, m.loadUsage())
 		}
+		return tea.Batch(cmds...)
 	case "D":
 		m.compact = !m.compact
 	case "/":
-		m.tab = 1
-		return m.openInput("filter")
+		if m.tab == 0 {
+			m.tab = 1
+		}
+		if m.tab == 1 || m.tab == 2 || m.tab == 4 {
+			return m.openInput("filter")
+		}
+		return m.notify("Filtering is available on Images, Containers, and Volumes.")
 	case "o":
 		if m.tab == 1 {
 			m.sortMode = (m.sortMode + 1) % 3
 			m.cursor = 0
 		}
 	case "j", "down", "shift+down":
-		if m.tab == 1 {
-			items := m.items()
-			if k == "shift+down" && len(items) > 0 {
-				m.selected[items[m.cursor].ID] = true
-			}
-			m.cursor++
-			m.clamp()
-			if k == "shift+down" && len(items) > 0 {
-				m.selected[items[m.cursor].ID] = true
-			}
-		}
+		m.moveCursor(k, 1)
 	case "k", "up", "shift+up":
-		if m.tab == 1 {
-			items := m.items()
-			if k == "shift+up" && len(items) > 0 {
-				m.selected[items[m.cursor].ID] = true
-			}
-			m.cursor--
-			m.clamp()
-			if k == "shift+up" && len(items) > 0 {
-				m.selected[items[m.cursor].ID] = true
-			}
-		}
+		m.moveCursor(k, -1)
 	case "space", " ":
 		if m.tab == 1 {
 			items := m.items()
@@ -156,21 +201,123 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 				m.selected[id] = !m.selected[id]
 			}
 		}
-	case "i", "enter", "tab":
+		if m.tab == 2 {
+			items := m.containers()
+			if len(items) > 0 {
+				id := items[m.containerCursor].ID
+				m.selectedContain[id] = !m.selectedContain[id]
+			}
+		}
+	case "i", "enter":
 		if m.tab == 1 {
 			return m.inspect()
 		}
+		if m.tab == 2 {
+			return m.inspectContainer()
+		}
+	case "tab":
+		if m.tab == 1 {
+			return m.inspect()
+		}
+		if m.tab == 2 {
+			m.containerDetail = !m.containerDetail
+			if m.containerDetail {
+				return m.inspectContainer()
+			}
+		}
+	case "r":
+		if m.tab == 1 {
+			return m.openRun()
+		}
+		if m.tab == 2 {
+			return m.triggerContainerAction(engine.ActionRestart, false)
+		}
+	case "x":
+		if m.tab == 2 {
+			return m.triggerContainerAction(engine.ActionStart, false)
+		}
+	case "s":
+		if m.tab == 2 {
+			return m.triggerContainerAction(engine.ActionStop, false)
+		}
+	case "K":
+		if m.tab == 2 {
+			return m.triggerContainerAction(engine.ActionKill, true)
+		}
+	case "y":
+		return m.copyEquivalent()
 	case "d":
 		if m.tab == 1 && len(m.removalIDs()) > 0 {
 			m.overlay = "remove"
 		}
+		if m.tab == 2 {
+			return m.triggerContainerAction(engine.ActionRemove, true)
+		}
+		if m.tab == 4 {
+			return m.openRemoveVolume()
+		}
+	case "l":
+		if m.tab == 2 {
+			ids := m.containerIDs()
+			if len(ids) == 0 {
+				return m.notify("No container selected.")
+			}
+			return m.openLogs(ids[0])
+		}
+	case "e":
+		if m.tab == 2 {
+			return m.openExec()
+		}
+	case "c":
+		return m.openCleanup()
 	}
 	return nil
+}
+
+func (m *Model) moveCursor(key string, delta int) {
+	switch m.tab {
+	case 1:
+		items := m.items()
+		if key == "shift+down" && len(items) > 0 {
+			m.selected[items[m.cursor].ID] = true
+		}
+		if key == "shift+up" && len(items) > 0 {
+			m.selected[items[m.cursor].ID] = true
+		}
+		m.cursor = max(0, min(m.cursor+delta, len(items)-1))
+		if (key == "shift+down" || key == "shift+up") && len(items) > 0 {
+			m.selected[items[m.cursor].ID] = true
+		}
+	case 2:
+		items := m.containers()
+		if key == "shift+down" && len(items) > 0 {
+			m.selectedContain[items[m.containerCursor].ID] = true
+		}
+		if key == "shift+up" && len(items) > 0 {
+			m.selectedContain[items[m.containerCursor].ID] = true
+		}
+		m.containerCursor = max(0, min(m.containerCursor+delta, len(items)-1))
+		if (key == "shift+down" || key == "shift+up") && len(items) > 0 {
+			m.selectedContain[items[m.containerCursor].ID] = true
+		}
+	case 4:
+		m.volumeCursor = max(0, min(m.volumeCursor+delta, len(m.volumes())-1))
+	}
 }
 
 func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 	k := msg.String()
 	if k == "esc" {
+		switch m.overlay {
+		case "cleanup-confirm":
+			m.overlay = "cleanup"
+			m.input.Blur()
+			return nil
+		case "log-filter":
+			m.overlay = "logs"
+			m.input.Blur()
+			return nil
+		}
 		m.closeOverlay()
 		return nil
 	}
@@ -222,9 +369,21 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case "filter":
 		if k == "enter" {
-			m.filter = m.input.Value()
-			m.cursor = 0
+			m.setActiveFilter(m.input.Value())
 			m.closeOverlay()
+			return nil
+		}
+	case "log-filter":
+		if k == "enter" {
+			value := m.input.Value()
+			if value != "" {
+				if _, err := regexp.Compile(value); err != nil {
+					return m.notify("Invalid regular expression: " + err.Error())
+				}
+			}
+			m.logsFilter = value
+			m.overlay = "logs"
+			m.input.Blur()
 			return nil
 		}
 	case "palette":
@@ -241,6 +400,13 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 			index := min(m.paletteCursor, len(results)-1)
 			action := results[index]
 			m.closeOverlay()
+			if action.key == "run-image" {
+				m.tab = 1
+				return m.openRun()
+			}
+			if action.key == "cleanup" {
+				return m.openCleanup()
+			}
 			if strings.HasPrefix(action.key, "image:") {
 				id := strings.TrimPrefix(action.key, "image:")
 				m.tab = 1
@@ -252,8 +418,157 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 				}
 				return nil
 			}
+			if strings.HasPrefix(action.key, "container:") {
+				id := strings.TrimPrefix(action.key, "container:")
+				m.tab = 2
+				for n, c := range m.containers() {
+					if c.ID == id {
+						m.containerCursor = n
+						return tea.Batch(m.inspectContainer(), m.loadStats())
+					}
+				}
+				return nil
+			}
 			return m.key(tea.KeyPressMsg{Code: []rune(action.key)[0], Text: action.key})
 		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		m.paletteCursor = 0
+		return cmd
+	case "container-action":
+		if k == "y" {
+			ids, action := m.actionIDs, m.actionName
+			m.closeOverlay()
+			return m.runContainerAction(action, ids)
+		}
+		if k == "n" || k == "q" {
+			m.closeOverlay()
+		}
+		return nil
+	case "run":
+		if k == "tab" || k == "down" {
+			return m.switchRunField(1)
+		}
+		if k == "shift+tab" || k == "up" {
+			return m.switchRunField(-1)
+		}
+		if m.runField == 4 {
+			if k == "left" || k == "h" {
+				m.runForm.restart = (m.runForm.restart - 1 + len(runRestarts)) % len(runRestarts)
+				return nil
+			}
+			if k == "right" || k == "l" {
+				m.runForm.restart = (m.runForm.restart + 1) % len(runRestarts)
+				return nil
+			}
+			if k == "enter" || k == "ctrl+s" {
+				return m.submitRun()
+			}
+			return nil
+		}
+		if k == "enter" || k == "ctrl+s" {
+			return m.submitRun()
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		m.runErr = ""
+		return cmd
+	case "cleanup":
+		if k == "q" {
+			m.closeOverlay()
+			return nil
+		}
+		if k == "j" || k == "down" {
+			m.cleanupCursor = min(len(services.CleanupKinds())-1, m.cleanupCursor+1)
+			return nil
+		}
+		if k == "k" || k == "up" {
+			m.cleanupCursor = max(0, m.cleanupCursor-1)
+			return nil
+		}
+		if k == "space" || k == " " {
+			kind := services.CleanupKinds()[m.cleanupCursor]
+			m.cleanupSelected[kind] = !m.cleanupSelected[kind]
+			return nil
+		}
+		if k == "R" {
+			return m.loadCleanup()
+		}
+		if k == "enter" {
+			if len(m.cleanupKinds()) == 0 {
+				return m.notify("Select at least one cleanup category.")
+			}
+			m.overlay = "cleanup-confirm"
+			m.input.Reset()
+			if m.cleanupSelected[services.CleanupUnusedVolumes] {
+				m.input.Placeholder = "volumes"
+				return m.input.Focus()
+			}
+			m.input.Blur()
+			return nil
+		}
+		return nil
+	case "cleanup-confirm":
+		if k == "q" {
+			m.closeOverlay()
+			return nil
+		}
+		if k == "enter" {
+			if m.cleanupSelected[services.CleanupUnusedVolumes] && strings.TrimSpace(m.input.Value()) != "volumes" {
+				return m.notify(`Type "volumes" to confirm volume deletion.`)
+			}
+			return m.executeCleanup()
+		}
+		if m.cleanupSelected[services.CleanupUnusedVolumes] {
+			var cmd tea.Cmd
+			m.input, cmd = m.input.Update(msg)
+			return cmd
+		}
+		return nil
+	case "remove-volume":
+		if k == "enter" {
+			return m.confirmRemoveVolume()
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
+	case "logs":
+		switch k {
+		case "q":
+			m.closeOverlay()
+		case "p":
+			return m.pauseLogs()
+		case "f":
+			return m.streamLogs(!m.logsFollow, true)
+		case "t":
+			m.logsTimestamps = !m.logsTimestamps
+		case "w":
+			m.logsWrap = !m.logsWrap
+		case "/":
+			return m.openInput("log-filter")
+		case "c":
+			return m.copyLogs()
+		case "s":
+			return m.saveLogs()
+		}
+		return nil
+	case "exec":
+		if k == "q" {
+			m.closeOverlay()
+			return nil
+		}
+		if k == "j" || k == "down" || k == "right" {
+			m.execShell = (m.execShell + 1) % len(execShells)
+			return nil
+		}
+		if k == "k" || k == "up" || k == "left" {
+			m.execShell = (m.execShell - 1 + len(execShells)) % len(execShells)
+			return nil
+		}
+		if k == "enter" {
+			return m.runExec()
+		}
+		return nil
 	}
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
@@ -301,6 +616,13 @@ func (m *Model) mouse(x, y int) tea.Cmd {
 			if x >= offset && x < end {
 				m.tab = n
 				m.detail = false
+				m.containerDetail = false
+				if n == 6 {
+					return m.loadUsage()
+				}
+				if n == 2 {
+					return m.loadStats()
+				}
 				return nil
 			}
 			offset = end
@@ -313,6 +635,24 @@ func (m *Model) mouse(x, y int) tea.Cmd {
 		index := start + row
 		if index < len(m.items()) {
 			m.cursor = index
+		}
+	}
+	if m.tab == 2 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
+		row := y - tokens.HeaderHeight - tokens.PanelFrame - 1
+		capacity := max(1, m.height-tokens.HeaderHeight-tokens.FooterHeight-tokens.PanelFrame-tokens.InsetY*2)
+		start := max(0, m.containerCursor-capacity+1)
+		index := start + row
+		if index < len(m.containers()) {
+			m.containerCursor = index
+		}
+	}
+	if m.tab == 4 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
+		row := y - tokens.HeaderHeight - tokens.PanelFrame - 1
+		capacity := max(1, m.height-tokens.HeaderHeight-tokens.FooterHeight-tokens.PanelFrame-tokens.InsetY*2)
+		start := max(0, m.volumeCursor-capacity+1)
+		index := start + row
+		if index < len(m.volumes()) {
+			m.volumeCursor = index
 		}
 	}
 	return nil

@@ -25,6 +25,7 @@ const (
 	actionTimeout    = 30 * time.Second
 	runTimeout       = 60 * time.Second
 	usageTimeout     = 30 * time.Second
+	statsTimeout     = 5 * time.Second
 )
 
 // New wraps a real or fake engine with the same policy.

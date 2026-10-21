@@ -64,13 +64,33 @@ func (m *Model) Render() string {
 			}
 		}
 		body = views.Images(s, items, m.cursor, m.selected, inspect, m.detail, []string{"name", "size", "age"}[m.sortMode], m.filter, w, height, m.clock)
+	case m.tab == 2:
+		items := m.containers()
+		var inspect *engine.ContainerInspection
+		if len(items) > 0 {
+			if i, ok := m.containerIns[items[m.containerCursor].ID]; ok {
+				inspect = &i
+			}
+		}
+		body = views.Containers(s, items, m.containerCursor, m.selectedContain, m.containerFilter, inspect, m.containerDetail, m.containerRaw, m.stats, m.statCPU, m.statHistory, w, height, m.clock)
+	case m.tab == 4:
+		body = views.Volumes(s, m.volumes(), m.volumeCursor, m.volumeFilter, w, height, m.clock)
+	case m.tab == 6:
+		body = views.System(s, m.usage, m.usageLoaded, m.usageErr, w, height, m.fixture)
 	default:
-		requirements := []string{"", "", "CTR-01–CTR-05 (M1)", "PRJ-01–PRJ-05 (M2)", "VOL-01 (M1)", "NET-01 (M2)", "SYS-01–SYS-04 (M1/M2)"}
+		requirements := []string{"", "", "", "PRJ-01–PRJ-05 (M2)", "", "NET-01 (M2)", ""}
 		body = views.Stub(s, components.TabNames()[m.tab], requirements[m.tab], w, height)
 	}
-	footer := "? help   : palette   p pull   / filter   J jobs   q quit"
-	if m.tab == 1 {
-		footer = "p pull  i inspect  d remove  o sort  / filter  space select  J jobs"
+	footer := "? help   : palette   c cleanup   p pull   / filter   J jobs   q quit"
+	switch m.tab {
+	case 1:
+		footer = "p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup"
+	case 2:
+		footer = "x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup"
+	case 4:
+		footer = "d remove unused  / filter  c cleanup  R refresh"
+	case 6:
+		footer = "c cleanup  R refresh  ? help  q quit"
 	}
 	running := 0
 	for _, j := range m.jobList {
@@ -99,7 +119,30 @@ func (m *Model) overlayContent() (string, string) {
 	case "pull-input":
 		return "Pull image", m.input.View() + "\n\nUse repository:tag or repository@sha256:digest.\nDocker's configured credential helpers are respected.\n\nenter pull   esc back"
 	case "filter":
-		return "Filter images", m.input.View() + "\n\nMatches repository, tag or image ID.\nenter apply   esc back"
+		title, scope := "Filter images", "repository, tag, or image ID"
+		switch m.tab {
+		case 2:
+			title, scope = "Filter containers", "name, image, state, project, or ID"
+		case 4:
+			title, scope = "Filter volumes", "name, driver, or mountpoint"
+		}
+		return title, m.input.View() + "\n\nMatches " + scope + ".\nenter apply   esc back"
+	case "run":
+		return "Run image", m.runOverlay()
+	case "container-action":
+		return "Confirm container action", m.containerActionOverlay()
+	case "logs":
+		return "Container logs", m.logsOverlay()
+	case "log-filter":
+		return "Filter logs", m.input.View() + "\n\nCase-insensitive regular expression.\nenter apply   esc back"
+	case "cleanup":
+		return "Smart cleanup preview", m.cleanupOverlay()
+	case "cleanup-confirm":
+		return "Confirm cleanup", m.cleanupConfirmOverlay()
+	case "remove-volume":
+		return "Confirm volume removal", m.removeVolumeOverlay()
+	case "exec":
+		return "Exec shell", m.execOverlay()
 	case "palette":
 		lines := []string{m.input.View(), ""}
 		results := m.paletteActions()

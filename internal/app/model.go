@@ -3,6 +3,8 @@ package app
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 	"sort"
 	"strings"
@@ -17,6 +19,7 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/core/store"
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/anim"
+	"github.com/Mersad-Moghaddam/lenger/internal/ui/components"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/style"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/tokens"
 )
@@ -28,6 +31,53 @@ type snapshotMsg struct {
 type inspectMsg struct {
 	id   string
 	data engine.Inspection
+	err  error
+}
+type containerInspectMsg struct {
+	id   string
+	data engine.ContainerInspection
+	err  error
+}
+type containerActionMsg struct {
+	action engine.ContainerAction
+	ids    []string
+	errs   map[string]error
+}
+type usageMsg struct {
+	data engine.SystemUsage
+	err  error
+}
+type statsMsg struct {
+	data map[string]engine.ContainerStats
+}
+type statsTickMsg struct{}
+type runMsg struct {
+	id  string
+	err error
+}
+type cleanupPlanMsg struct {
+	plan services.CleanupPlan
+	err  error
+}
+type cleanupDoneMsg struct {
+	result services.CleanupResult
+	err    error
+}
+type volumeRemovedMsg struct {
+	name string
+	err  error
+}
+type execDoneMsg struct{ err error }
+type logLineMsg struct {
+	gen   uint64
+	entry engine.LogEntry
+}
+type logEndMsg struct {
+	gen uint64
+	err error
+}
+type logSavedMsg struct {
+	path string
 	err  error
 }
 type removedMsg map[string]error
@@ -49,8 +99,22 @@ type Model struct {
 	sheet        style.Sheet
 	store        store.Store
 	inspections  map[string]engine.Inspection
+	containerIns map[string]engine.ContainerInspection
 	eventHistory []engine.Event
 	err          *engine.ClassifiedError
+
+	// Disk usage is loaded lazily for the System tab and cleanup preview.
+	usage        engine.SystemUsage
+	usageLoaded  bool
+	usageLoading bool
+	usageErr     *engine.ClassifiedError
+
+	// Container resource samples are keyed by ID and refreshed only on tab 2.
+	stats        map[string]engine.ContainerStats
+	statCPU      map[string]float64
+	statHistory  map[string][]float64
+	statsLoading bool
+	statsTicking bool
 
 	// Workers communicate through detached snapshots and cancellation-aware channels.
 	jobs    *jobs.Manager
@@ -60,27 +124,65 @@ type Model struct {
 	themes  chan tokens.Palette
 
 	// Navigation and presentation state.
-	width          int
-	height         int
-	tab            int
-	cursor         int
-	sortMode       int
-	paletteCursor  int
-	selected       map[string]bool
-	filter         string
-	overlay        string
-	toast          string
-	toastID        uint64
-	input          textinput.Model
-	loading        bool
-	refreshing     bool
-	detail         bool
-	fixture        bool
-	compact        bool
-	refreshPending bool
-	completedJobs  map[uint64]bool
-	motion         anim.Spring
-	clock          time.Time
+	width           int
+	height          int
+	tab             int
+	cursor          int
+	containerCursor int
+	volumeCursor    int
+	sortMode        int
+	paletteCursor   int
+	selected        map[string]bool
+	selectedContain map[string]bool
+	filter          string
+	containerFilter string
+	volumeFilter    string
+	overlay         string
+	toast           string
+	toastID         uint64
+	input           textinput.Model
+	loading         bool
+	refreshing      bool
+	detail          bool
+	containerDetail bool
+	containerRaw    bool
+	fixture         bool
+	compact         bool
+	refreshPending  bool
+	completedJobs   map[uint64]bool
+	motion          anim.Spring
+	clock           time.Time
+
+	// Container logs are a capped ring owned by the model thread.
+	logs           []engine.LogEntry
+	logsID         string
+	logsFollow     bool
+	logsPaused     bool
+	logsTimestamps bool
+	logsWrap       bool
+	logsFilter     string
+	logsNotice     string
+	logsGen        uint64
+	logsCancel     context.CancelFunc
+	logCh          chan tea.Msg
+
+	// Modal workflows keep their editable state on the model thread.
+	runImage        string
+	runForm         runForm
+	runField        int
+	runErr          string
+	runBusy         bool
+	actionIDs       []string
+	actionName      engine.ContainerAction
+	cleanupPlan     services.CleanupPlan
+	cleanupLoaded   bool
+	cleanupLoading  bool
+	cleanupErr      *engine.ClassifiedError
+	cleanupSelected map[services.CleanupKind]bool
+	cleanupCursor   int
+	removeVolume    string
+	execContainer   string
+	execShell       int
 }
 
 // New creates a model without performing I/O or scheduling animation.
@@ -92,23 +194,30 @@ func New(ctx context.Context, s *services.Service, c config.Config, p tokens.Pal
 	input.SetWidth(tokens.ModalWidth - tokens.InsetX*4)
 	_, plain := os.LookupEnv("NO_COLOR")
 	return &Model{
-		ctx:           ctx,
-		cancel:        cancel,
-		service:       s,
-		config:        c,
-		sheet:         style.Sheet{Palette: p, Plain: plain, ASCII: c.UI.ASCII},
-		jobs:          jobs.New(),
-		events:        make(chan engine.Event, 64),
-		themes:        make(chan tokens.Palette, 1),
-		width:         120,
-		height:        40,
-		selected:      make(map[string]bool),
-		inspections:   make(map[string]engine.Inspection),
-		completedJobs: make(map[uint64]bool),
-		input:         input,
-		loading:       true,
-		motion:        anim.Spring{Reduced: c.UI.ReduceMotion || plain},
-		clock:         time.Now(),
+		ctx:             ctx,
+		cancel:          cancel,
+		service:         s,
+		config:          c,
+		sheet:           style.Sheet{Palette: p, Plain: plain, ASCII: c.UI.ASCII},
+		jobs:            jobs.New(),
+		events:          make(chan engine.Event, 64),
+		themes:          make(chan tokens.Palette, 1),
+		width:           120,
+		height:          40,
+		selected:        make(map[string]bool),
+		selectedContain: make(map[string]bool),
+		cleanupSelected: make(map[services.CleanupKind]bool),
+		inspections:     make(map[string]engine.Inspection),
+		containerIns:    make(map[string]engine.ContainerInspection),
+		stats:           make(map[string]engine.ContainerStats),
+		statCPU:         make(map[string]float64),
+		statHistory:     make(map[string][]float64),
+		completedJobs:   make(map[uint64]bool),
+		input:           input,
+		loading:         true,
+		logsTimestamps:  true,
+		motion:          anim.Spring{Reduced: c.UI.ReduceMotion || plain},
+		clock:           time.Now(),
 	}
 }
 
@@ -155,9 +264,153 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.refreshPending {
 			m.refreshPending = false
-			return m, m.refresh()
+			return m, tea.Batch(m.refresh(), m.loadStats())
+		}
+		if m.tab == 2 && m.err == nil {
+			return m, m.loadStats()
 		}
 		return m, nil
+	case containerInspectMsg:
+		if msg.err != nil {
+			return m, m.notify(engine.Classify(msg.err).Message)
+		}
+		m.containerIns[msg.id] = msg.data
+		return m, nil
+	case containerActionMsg:
+		failures := 0
+		for _, err := range msg.errs {
+			if err != nil {
+				failures++
+			}
+		}
+		if msg.action == engine.ActionRemove && failures == 0 {
+			for _, id := range msg.ids {
+				delete(m.selectedContain, id)
+				delete(m.containerIns, id)
+			}
+		}
+		text := "Container action completed."
+		if failures > 0 {
+			text = "Some container actions failed; refresh and check the current state."
+		}
+		return m, tea.Batch(m.notify(text), m.refresh(), m.loadUsage(), m.loadStats())
+	case usageMsg:
+		m.usageLoading = false
+		if msg.err != nil {
+			m.usageErr = engine.Classify(msg.err)
+			m.usageLoaded = false
+		} else {
+			m.usage = msg.data
+			m.usageLoaded = true
+			m.usageErr = nil
+		}
+		return m, nil
+	case statsMsg:
+		m.statsLoading = false
+		for id, sample := range msg.data {
+			if previous, ok := m.stats[id]; ok && sample.SystemTotal > previous.SystemTotal {
+				deltaSystem := sample.SystemTotal - previous.SystemTotal
+				deltaCPU := sample.CPUTotal - previous.CPUTotal
+				percent := 0.0
+				if deltaCPU <= deltaSystem*64 {
+					percent = float64(deltaCPU) / float64(deltaSystem) * 100
+					percent *= float64(max(1, sample.OnlineCPUs))
+					percent = max(0, min(999, percent))
+				}
+				m.statCPU[id] = percent
+				history := append(m.statHistory[id], percent)
+				if len(history) > 32 {
+					history = history[len(history)-32:]
+				}
+				m.statHistory[id] = history
+			}
+			m.stats[id] = sample
+		}
+		if m.tab == 2 {
+			return m, m.statsTick()
+		}
+		return m, nil
+	case statsTickMsg:
+		m.statsTicking = false
+		if m.tab != 2 || !m.hasRunningContainers() {
+			return m, nil
+		}
+		return m, tea.Batch(m.loadStats(), m.statsTick())
+	case runMsg:
+		m.runBusy = false
+		if msg.err != nil {
+			m.runErr = engine.Classify(msg.err).Message
+			return m, nil
+		}
+		m.closeOverlay()
+		m.tab = 2
+		m.containerDetail = false
+		return m, tea.Batch(m.notify("Container started. Logs are one key away."), m.refresh(), m.loadUsage(), m.loadStats())
+	case cleanupPlanMsg:
+		m.cleanupLoading = false
+		m.cleanupLoaded = true
+		if msg.err != nil {
+			m.cleanupErr = engine.Classify(msg.err)
+			return m, nil
+		}
+		m.cleanupErr = nil
+		m.cleanupPlan = msg.plan
+		m.cleanupCursor = 0
+		m.cleanupSelected = defaultCleanupSelection()
+		return m, nil
+	case cleanupDoneMsg:
+		m.cleanupLoading = false
+		if msg.err != nil {
+			return m, m.notify(engine.Classify(msg.err).Message)
+		}
+		m.closeOverlay()
+		text := fmt.Sprintf("Cleanup removed %d item(s).", msg.result.Removed)
+		if msg.result.Reclaimed > 0 {
+			prefix := ""
+			if msg.result.Estimated {
+				prefix = "up to "
+			}
+			text += " " + prefix + components.Bytes(msg.result.Reclaimed) + " reclaimable."
+		}
+		if len(msg.result.Errors) > 0 {
+			text += fmt.Sprintf(" %d item(s) were skipped or failed.", len(msg.result.Errors))
+		}
+		return m, tea.Batch(m.notify(text), m.refresh(), m.loadUsage())
+	case volumeRemovedMsg:
+		if msg.err != nil {
+			return m, m.notify(engine.Classify(msg.err).Message)
+		}
+		m.closeOverlay()
+		return m, tea.Batch(m.notify("Volume removed."), m.refresh(), m.loadUsage())
+	case execDoneMsg:
+		if msg.err != nil {
+			return m, m.notify("Exec exited with an error: " + engine.Classify(msg.err).Message)
+		}
+		return m, m.refresh()
+	case logLineMsg:
+		if msg.gen != m.logsGen {
+			return m, nil
+		}
+		m.logs = append(m.logs, msg.entry)
+		if len(m.logs) > 50_000 {
+			m.logs = m.logs[len(m.logs)-50_000:]
+		}
+		return m, waitLog(m.logCh, m.logsGen, m.ctx)
+	case logEndMsg:
+		if msg.gen != m.logsGen {
+			return m, nil
+		}
+		m.logsCancel = nil
+		m.logsFollow = false
+		if msg.err != nil && m.ctx.Err() == nil && !errors.Is(msg.err, context.Canceled) {
+			m.logsNotice = engine.Classify(msg.err).Message
+		}
+		return m, nil
+	case logSavedMsg:
+		if msg.err != nil {
+			return m, m.notify("Could not save logs: " + msg.err.Error())
+		}
+		return m, m.notify("Logs saved to " + msg.path)
 	case pullStartedMsg:
 		m.jobID = msg.id
 		// The notification loop owns completion bookkeeping, including pulls
@@ -209,7 +462,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		cmd := m.waitEvent()
 		if store.Invalidate(e) {
-			return m, tea.Batch(cmd, m.refresh())
+			m.usageLoaded = false
+			cmds := []tea.Cmd{cmd, m.refresh()}
+			if m.tab == 6 {
+				cmds = append(cmds, m.loadUsage())
+			}
+			return m, tea.Batch(cmds...)
 		}
 		return m, cmd
 	case eventStreamStoppedMsg:
@@ -239,16 +497,36 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.key(msg)
 	case tea.PasteMsg:
-		if m.overlay == "pull-input" || m.overlay == "palette" || m.overlay == "filter" {
+		switch m.overlay {
+		case "pull-input", "palette", "filter", "log-filter", "remove-volume":
 			var cmd tea.Cmd
 			m.input, cmd = m.input.Update(msg)
 			return m, cmd
+		case "cleanup-confirm":
+			if m.cleanupSelected[services.CleanupUnusedVolumes] {
+				var cmd tea.Cmd
+				m.input, cmd = m.input.Update(msg)
+				return m, cmd
+			}
+		case "run":
+			if m.runField != 4 {
+				var cmd tea.Cmd
+				m.input, cmd = m.input.Update(msg)
+				return m, cmd
+			}
 		}
 	}
 	return m, nil
 }
 
-func (m *Model) quit() tea.Cmd { m.jobs.CancelAll(); m.cancel(); return tea.Quit }
+func (m *Model) quit() tea.Cmd {
+	if m.logsCancel != nil {
+		m.logsCancel()
+	}
+	m.jobs.CancelAll()
+	m.cancel()
+	return tea.Quit
+}
 func (m *Model) notify(text string) tea.Cmd {
 	m.toast = text
 	m.toastID++
@@ -278,7 +556,64 @@ func (m *Model) items() []engine.Image {
 	})
 	return items
 }
-func (m *Model) clamp() { m.cursor = max(0, min(m.cursor, len(m.items())-1)) }
+func (m *Model) clamp() {
+	m.cursor = max(0, min(m.cursor, len(m.items())-1))
+	m.containerCursor = max(0, min(m.containerCursor, len(m.containers())-1))
+	m.volumeCursor = max(0, min(m.volumeCursor, len(m.volumes())-1))
+	m.cleanupCursor = max(0, min(m.cleanupCursor, len(services.CleanupKinds())-1))
+}
+
+func (m *Model) containers() []engine.Container {
+	query := strings.ToLower(m.containerFilter)
+	items := make([]engine.Container, 0, len(m.store.Containers))
+	for _, c := range m.store.Containers {
+		haystack := strings.ToLower(strings.Join([]string{c.Name, c.Image, c.State, c.Status, c.Project, c.Service, c.ID}, " "))
+		if strings.Contains(haystack, query) {
+			items = append(items, c)
+		}
+	}
+	sort.SliceStable(items, func(a, b int) bool { return items[a].Name < items[b].Name })
+	return items
+}
+
+func (m *Model) volumes() []engine.Volume {
+	query := strings.ToLower(m.volumeFilter)
+	items := make([]engine.Volume, 0, len(m.store.Volumes))
+	for _, v := range m.store.Volumes {
+		haystack := strings.ToLower(v.Name + " " + v.Driver + " " + v.Mountpoint)
+		if strings.Contains(haystack, query) {
+			items = append(items, v)
+		}
+	}
+	sort.SliceStable(items, func(a, b int) bool { return items[a].Name < items[b].Name })
+	return items
+}
+
+func (m *Model) activeFilter() string {
+	switch m.tab {
+	case 2:
+		return m.containerFilter
+	case 4:
+		return m.volumeFilter
+	default:
+		return m.filter
+	}
+}
+
+func (m *Model) setActiveFilter(value string) {
+	switch m.tab {
+	case 2:
+		m.containerFilter = value
+		m.containerCursor = 0
+	case 4:
+		m.volumeFilter = value
+		m.volumeCursor = 0
+	default:
+		m.filter = value
+		m.cursor = 0
+	}
+}
+
 func (m *Model) inspect() tea.Cmd {
 	items := m.items()
 	if len(items) == 0 {
@@ -293,6 +628,23 @@ func (m *Model) inspect() tea.Cmd {
 	return func() tea.Msg { i, err := service.Inspect(ctx, id); return inspectMsg{id, i, err} }
 }
 
+func (m *Model) inspectContainer() tea.Cmd {
+	items := m.containers()
+	if len(items) == 0 {
+		return nil
+	}
+	c := items[m.containerCursor]
+	m.containerDetail = true
+	if _, ok := m.containerIns[c.ID]; ok {
+		return nil
+	}
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		data, err := service.InspectContainer(ctx, c.ID)
+		return containerInspectMsg{id: c.ID, data: data, err: err}
+	}
+}
+
 // Gallery seeds a model for rendering only, without starting Init or background I/O.
 func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspection *engine.Inspection) {
 	m.store.Replace(batch)
@@ -304,8 +656,116 @@ func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspectio
 	if inspection != nil {
 		m.inspections[inspection.ID] = *inspection
 	}
-	if overlay == "pull" {
+	m.usage = galleryUsage(batch)
+	m.usageLoaded = true
+	m.seedGalleryStats(batch)
+	if len(batch.Containers) > 0 {
+		if data, err := m.service.InspectContainer(m.ctx, batch.Containers[0].ID); err == nil {
+			m.containerIns[data.ID] = data
+		}
+	}
+	switch overlay {
+	case "pull":
 		m.jobID = 1
 		m.jobList = []jobs.Job{{ID: 1, Target: "redis:7.4", State: "running", Current: 37_200_000, Total: 60_000_000, Speed: 12_400_000, ETA: 9 * time.Second, Layers: []engine.Progress{{ID: "a3f1c9e2b7d4", Status: "Pull complete", Current: 20_000_000, Total: 20_000_000}, {ID: "7c0d8e5a1f92", Status: "Downloading", Current: 17_200_000, Total: 40_000_000}}}}
+	case "run":
+		if len(batch.Images) > 0 {
+			m.runImage = batch.Images[0].Name()
+			m.runForm = runForm{name: "lenger-web", ports: "8080:80", env: "APP_ENV=production", restart: 1}
+			m.runField = 0
+			m.input.SetValue(m.runForm.name)
+			_ = m.input.Focus()
+		}
+	case "logs":
+		if len(batch.Containers) > 0 {
+			m.logsID = batch.Containers[0].ID
+			m.logsFollow = false
+			m.logsPaused = true
+			m.logsNotice = "fixture buffer · stream detached"
+			m.logs = []engine.LogEntry{
+				{At: m.clock.Add(-4 * time.Second), Stream: "stdout", Text: "server listening on :8080"},
+				{At: m.clock.Add(-3 * time.Second), Stream: "stdout", Text: "connected to postgres:5432"},
+				{At: m.clock.Add(-2 * time.Second), Stream: "stderr", Text: "warn: cache miss for /api/health"},
+				{At: m.clock.Add(-time.Second), Stream: "stdout", Text: "GET /api/health 200 2.4ms"},
+			}
+		}
+	case "cleanup":
+		if plan, err := m.service.CleanupPreview(m.ctx); err == nil {
+			m.cleanupPlan = plan
+			m.cleanupLoaded = true
+			m.cleanupSelected = defaultCleanupSelection()
+		}
+	case "container-action":
+		if len(batch.Containers) > 0 {
+			m.actionIDs = []string{batch.Containers[0].ID}
+			m.actionName = engine.ActionRemove
+		}
+	case "exec":
+		if len(batch.Containers) > 0 {
+			m.execContainer = batch.Containers[0].ID
+		}
+	case "remove-volume":
+		for _, v := range batch.Volumes {
+			if v.RefCount == 0 && len(v.UsedBy) == 0 {
+				m.removeVolume = v.Name
+				break
+			}
+		}
 	}
+}
+
+func (m *Model) seedGalleryStats(batch store.Snapshot) {
+	for n, c := range batch.Containers {
+		if !c.Running() {
+			continue
+		}
+		percent := []float64{18.4, 7.1, 0.8}[n%3]
+		memory := []uint64{96_000_000, 512_000_000, 18_000_000}[n%3]
+		m.stats[c.ID] = engine.ContainerStats{
+			At: m.clock, SystemTotal: 1_000_000_000,
+			CPUTotal: uint64(1_000_000_000 / 100 * percent / 4), OnlineCPUs: 4,
+			Memory: memory, MemoryLimit: 1_000_000_000,
+			NetworkRX: memory / 2, NetworkTX: memory / 6,
+			BlockRead: memory / 8, BlockWrite: memory / 16, PIDs: uint64(8 + n),
+		}
+		m.statCPU[c.ID] = percent
+		history := make([]float64, 0, 16)
+		for i := 0; i < 16; i++ {
+			wave := 0.72 + 0.28*float64((i*7+n*3)%10)/10
+			history = append(history, percent*wave)
+		}
+		m.statHistory[c.ID] = history
+	}
+}
+
+func galleryUsage(batch store.Snapshot) engine.SystemUsage {
+	var usage engine.SystemUsage
+	for _, image := range batch.Images {
+		usage.Images.Total++
+		usage.Images.Size += max(0, image.Size)
+		if len(image.UsedBy) > 0 {
+			usage.Images.Active++
+		} else {
+			usage.Images.Reclaimable += max(0, image.Size)
+		}
+	}
+	for _, container := range batch.Containers {
+		usage.Containers.Total++
+		if container.Running() {
+			usage.Containers.Active++
+		}
+	}
+	for _, volume := range batch.Volumes {
+		usage.Volumes.Total++
+		usage.Volumes.Size += max(0, volume.Size)
+		if len(volume.UsedBy) > 0 {
+			usage.Volumes.Active++
+		} else {
+			usage.Volumes.Reclaimable += max(0, volume.Size)
+		}
+	}
+	usage.BuildCache = engine.UsageCategory{Total: 1, Size: 700_000_000, Reclaimable: 700_000_000}
+	usage.Used = usage.Images.Size + usage.Containers.Size + usage.Volumes.Size + usage.BuildCache.Size
+	usage.Reclaimable = usage.Images.Reclaimable + usage.Containers.Reclaimable + usage.Volumes.Reclaimable + usage.BuildCache.Reclaimable
+	return usage
 }

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -94,6 +95,17 @@ func (m *Model) waitTheme() tea.Cmd {
 			return nil
 		case palette := <-themes:
 			return themeMsg(palette)
+		}
+	}
+}
+
+func waitLog(ch chan tea.Msg, gen uint64, ctx context.Context) tea.Cmd {
+	return func() tea.Msg {
+		select {
+		case <-ctx.Done():
+			return nil
+		case msg := <-ch:
+			return msg
 		}
 	}
 }

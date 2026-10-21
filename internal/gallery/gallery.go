@@ -59,7 +59,11 @@ func Frames(ctx context.Context, name string, size Size) ([]Frame, error) {
 		tab     int
 		overlay string
 	}
-	screens := []screen{{"dashboard", 0, ""}, {"images", 1, ""}, {"containers", 2, ""}, {"projects", 3, ""}, {"volumes", 4, ""}, {"networks", 5, ""}, {"system", 6, ""}, {"pull", 1, "pull"}, {"palette", 1, "palette"}, {"help", 0, "help"}, {"removal", 1, "remove"}, {"jobs", 1, "jobs"}}
+	screens := []screen{
+		{"dashboard", 0, ""}, {"images", 1, ""}, {"containers", 2, ""}, {"projects", 3, ""}, {"volumes", 4, ""}, {"networks", 5, ""}, {"system", 6, ""},
+		{"pull", 1, "pull"}, {"palette", 1, "palette"}, {"help", 0, "help"}, {"removal", 1, "remove"}, {"jobs", 1, "jobs"},
+		{"run", 1, "run"}, {"logs", 2, "logs"}, {"cleanup", 6, "cleanup"}, {"container-action", 2, "container-action"}, {"exec", 2, "exec"}, {"volume-removal", 4, "remove-volume"},
+	}
 	frames := make([]Frame, 0, len(screens))
 	for _, screen := range screens {
 		c := config.Defaults()

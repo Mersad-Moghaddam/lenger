@@ -78,6 +78,19 @@ type RunSpec struct {
 	Command, Ports, Env, Volumes  []string
 }
 
+// ContainerStats is one non-streaming sample of measured container resources.
+// CPU and system totals are cumulative; callers derive a percentage from two
+// samples taken close together.
+type ContainerStats struct {
+	At                    time.Time
+	CPUTotal, SystemTotal uint64
+	OnlineCPUs            uint32
+	Memory, MemoryLimit   uint64
+	NetworkRX, NetworkTX  uint64
+	BlockRead, BlockWrite uint64
+	PIDs                  uint64
+}
+
 // LogOptions controls one bounded or following container log stream.
 type LogOptions struct {
 	Follow bool
@@ -166,6 +179,7 @@ type Engine interface {
 	SystemUsage(context.Context) (SystemUsage, error)
 
 	InspectContainer(context.Context, string) (ContainerInspection, error)
+	ContainerStats(context.Context, string) (ContainerStats, error)
 	CreateContainer(context.Context, RunSpec) (string, error)
 	ActContainer(context.Context, string, ContainerAction) error
 	Logs(context.Context, string, LogOptions, func(LogEntry) error) error

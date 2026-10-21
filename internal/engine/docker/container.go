@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"math"
@@ -72,6 +73,42 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 	}
 	slices.Sort(out.Ports)
 	slices.Sort(out.Networks)
+	return out, nil
+}
+
+// ContainerStats returns one immediate sample. The caller computes CPU percent
+// from cumulative totals so the daemon never waits for a second sample.
+func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.ContainerStats, error) {
+	result, err := e.client.ContainerStats(ctx, id, client.ContainerStatsOptions{Stream: false})
+	if err != nil {
+		return engine.ContainerStats{}, fmt.Errorf("read container stats: %w", err)
+	}
+	defer result.Body.Close()
+	var response container.StatsResponse
+	if err := json.NewDecoder(result.Body).Decode(&response); err != nil {
+		return engine.ContainerStats{}, fmt.Errorf("decode container stats: %w", err)
+	}
+	out := engine.ContainerStats{
+		At: response.Read, CPUTotal: response.CPUStats.CPUUsage.TotalUsage,
+		SystemTotal: response.CPUStats.SystemUsage, OnlineCPUs: response.CPUStats.OnlineCPUs,
+		Memory: response.MemoryStats.Usage, MemoryLimit: response.MemoryStats.Limit,
+		PIDs: response.PidsStats.Current,
+	}
+	if cache := response.MemoryStats.Stats["inactive_file"]; cache > 0 && cache < out.Memory {
+		out.Memory -= cache
+	}
+	for _, network := range response.Networks {
+		out.NetworkRX += network.RxBytes
+		out.NetworkTX += network.TxBytes
+	}
+	for _, entry := range response.BlkioStats.IoServiceBytesRecursive {
+		switch strings.ToLower(entry.Op) {
+		case "read":
+			out.BlockRead += entry.Value
+		case "write":
+			out.BlockWrite += entry.Value
+		}
+	}
 	return out, nil
 }
 

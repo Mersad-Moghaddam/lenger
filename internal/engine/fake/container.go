@@ -47,6 +47,37 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 	return out, nil
 }
 
+// ContainerStats returns a deterministic sample that changes with wall time so
+// the UI can exercise delta-based CPU calculations without a daemon.
+func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.ContainerStats, error) {
+	if err := ctx.Err(); err != nil {
+		return engine.ContainerStats{}, err
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	n := slices.IndexFunc(e.containers, func(c engine.Container) bool { return c.ID == id || c.Name == id })
+	if n < 0 {
+		return engine.ContainerStats{}, fmt.Errorf("container not found")
+	}
+	c := e.containers[n]
+	if !c.Running() {
+		return engine.ContainerStats{}, fmt.Errorf("container is not running")
+	}
+	memory := []uint64{96_000_000, 512_000_000, 18_000_000}[n%3]
+	network := []uint64{48_000_000, 12_000_000, 3_000_000}[n%3]
+	block := []uint64{6_000_000, 92_000_000, 1_000_000}[n%3]
+	percent := []float64{18.4, 7.1, 0.8}[n%3]
+	now := time.Now().UTC()
+	system := uint64(now.UnixMilli()) * 1_000_000
+	online := uint32(4)
+	return engine.ContainerStats{
+		At: now, CPUTotal: uint64(float64(system) / 100 * percent / float64(online)),
+		SystemTotal: system, OnlineCPUs: online, Memory: memory, MemoryLimit: 1_000_000_000,
+		NetworkRX: network, NetworkTX: network / 3, BlockRead: block, BlockWrite: block / 2,
+		PIDs: uint64(8 + n),
+	}, nil
+}
+
 // CreateContainer adds a fixture container in the created state.
 func (e *Engine) CreateContainer(ctx context.Context, spec engine.RunSpec) (string, error) {
 	if err := ctx.Err(); err != nil {
