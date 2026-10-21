@@ -30,6 +30,82 @@ func Bar(fraction float64, width int, ascii bool) string {
 	return out + strings.Repeat("░", width-full)
 }
 
+// Sounding renders a measured horizontal gauge with quarter marks. It is used
+// where a progress bar would hide the scale: depth of local image storage,
+// cleanup previews and capacity panels. All three lines have exactly width cells.
+func Sounding(fraction float64, width int, ascii bool) string {
+	if width <= 0 {
+		return ""
+	}
+	if math.IsNaN(fraction) {
+		fraction = 0
+	}
+	fraction = max(0, min(1, fraction))
+	labels := make([]rune, width)
+	for n := range labels {
+		labels[n] = ' '
+	}
+	marks := []string{"0", "25", "50", "75", "100"}
+	last := -2
+	for n, mark := range marks {
+		position := n * (width - 1) / 4
+		if n == len(marks)-1 {
+			position = width - len(mark)
+		}
+		if position <= last+1 || position+len(mark) > width {
+			continue
+		}
+		for offset, r := range mark {
+			labels[position+offset] = r
+		}
+		last = position + len(mark) - 1
+	}
+	axis := make([]rune, width)
+	fillEmpty, fillFull, tick := '╌', '━', '┼'
+	if ascii {
+		fillEmpty, fillFull, tick = '.', '=', '+'
+	}
+	for n := range axis {
+		switch n {
+		case 0:
+			axis[n] = '├'
+			if ascii {
+				axis[n] = '+'
+			}
+		case width - 1:
+			axis[n] = '┤'
+			if ascii {
+				axis[n] = '+'
+			}
+		default:
+			axis[n] = '─'
+			if ascii {
+				axis[n] = '-'
+			}
+			if n == width/4 || n == width/2 || n == 3*width/4 {
+				axis[n] = tick
+			}
+		}
+	}
+	steps := int(fraction * float64(width) * 8)
+	full := steps / 8
+	partial := steps % 8
+	bar := make([]rune, width)
+	for n := range bar {
+		bar[n] = fillEmpty
+	}
+	for n := 0; n < min(full, width); n++ {
+		bar[n] = fillFull
+	}
+	if full < width && partial > 0 {
+		bar[full] = []rune(" ▏▎▍▌▋▊▉")[partial]
+		if ascii {
+			bar[full] = ':'
+		}
+	}
+	return string(labels) + "\n" + string(axis) + "\n" + string(bar)
+}
+
 // Sparkline samples a series into exactly width cells.
 func Sparkline(values []float64, width int, ascii bool) string {
 	if width <= 0 {

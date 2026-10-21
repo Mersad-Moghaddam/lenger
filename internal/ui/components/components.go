@@ -56,6 +56,39 @@ func Pill(s style.Sheet, state string) string {
 	return s.Text(icon+" "+style.Clean(state), role)
 }
 
+// StatusChip renders one daemon or resource state with a glyph, word and role.
+func StatusChip(s style.Sheet, label, state string) string {
+	glyph, role := "●", s.Palette.Success
+	switch state {
+	case "loading", "paused", "warning":
+		glyph, role = "◌", s.Palette.Warning
+	case "error", "unhealthy":
+		glyph, role = "✕", s.Palette.Danger
+	case "offline", "muted":
+		glyph, role = "○", s.Palette.Muted
+	}
+	if s.ASCII {
+		glyph = map[string]string{"●": "+", "◌": "~", "✕": "!", "○": "-"}[glyph]
+	}
+	return s.Text(glyph+" "+style.Clean(label), role)
+}
+
+// Empty anchors an empty view with a small harbor mark and one next action.
+// The mark is decorative; the sentence carries the instruction.
+func Empty(s style.Sheet, title, next string, width int) string {
+	g := tokens.Icons(s.ASCII).Anchor
+	art := []string{"      " + g, "  ~~~~~~~~~~~~~", " ~  ~  ~  ~  ~"}
+	if s.ASCII {
+		art = []string{"      @", "  ~~~~~~~~~~~~~", " ~  ~  ~  ~  ~"}
+	}
+	lines := append(art, "", s.Heading(title), s.Muted(next))
+	body := strings.Join(lines, "\n")
+	if width > 0 && !s.Plain {
+		body = lipgloss.NewStyle().Width(width).Align(lipgloss.Center).Render(body)
+	}
+	return body
+}
+
 // Bytes returns a compact decimal byte quantity.
 func Bytes(size int64) string {
 	switch {

@@ -1,14 +1,17 @@
 package app
 
 import (
-	tea "charm.land/bubbletea/v2"
 	"fmt"
+	"strings"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/components"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/style"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/tokens"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/views"
-	"strings"
 )
 
 // View composes one bounded frame and opts into the alternate screen.
@@ -29,17 +32,20 @@ func (m *Model) Render() string {
 	if w < tokens.MinWidth || h < tokens.MinHeight {
 		return style.Fit(fmt.Sprintf("Lenger needs at least %d×%d cells.\nCurrent size: %d×%d. Resize or press q to quit.", tokens.MinWidth, tokens.MinHeight, w, h), w, h)
 	}
-	status := "docker · local"
+	status, state := "docker · local", "ok"
 	if m.fixture {
-		status = "fixture engine · offline"
+		status, state = "fixture engine · offline", "muted"
 	}
 	if m.loading {
-		status = "connecting…"
+		status, state = "connecting…", "loading"
 	}
 	if m.err != nil {
-		status = "docker · unavailable"
+		status, state = "docker · unavailable", "error"
 	}
-	header := s.Gradient(tokens.Icons(s.ASCII).Anchor+" LENGER") + "   " + s.Muted("Anchor your containers.") + "   " + s.Muted(status) + "\n" + components.Tabs(s, m.tab, w) + "\n"
+	brand := s.Gradient(tokens.Icons(s.ASCII).Anchor+" LENGER") + "   " + s.Muted("Anchor your containers.")
+	chip := components.StatusChip(s, status, state)
+	gap := max(1, w-lipgloss.Width(brand)-lipgloss.Width(chip))
+	header := brand + strings.Repeat(" ", gap) + chip + "\n" + components.Tabs(s, m.tab, w) + "\n"
 	height := h - tokens.HeaderHeight - tokens.FooterHeight
 	var body string
 	switch {

@@ -52,9 +52,10 @@ func Dashboard(s style.Sheet, data store.Store, events []engine.Event, width, he
 	if disk > 0 {
 		fraction = float64(disk-unused) / float64(disk)
 	}
-	diskBody := fmt.Sprintf("%s in local images; %s referenced\n%s\nReferenced / unused image bytes; shared bytes may overlap.", components.Bytes(disk), components.Bytes(disk-unused), s.Text(chart.Bar(fraction, max(1, rightWidth-tokens.InsetX*2-tokens.PanelFrame), s.ASCII), s.Palette.Accent))
+	diskWidth := max(1, rightWidth-tokens.InsetX*2-tokens.PanelFrame)
+	diskBody := fmt.Sprintf("%s local · %3.0f%% referenced\n%s\n%s unused; shared bytes may overlap.", components.Bytes(disk), fraction*100, chart.Sounding(fraction, diskWidth, s.ASCII), components.Bytes(unused))
 	if disk == 0 {
-		diskBody = "No local images. Press p to pull one."
+		diskBody = components.Empty(s, "No local images.", "Press p to pull one.", diskWidth)
 	}
 	eventLines := []string{}
 	for n := len(events) - 1; n >= 0 && len(eventLines) < 5; n-- {
@@ -64,7 +65,7 @@ func Dashboard(s style.Sheet, data store.Store, events []engine.Event, width, he
 	if len(eventLines) == 0 {
 		eventLines = append(eventLines, "Waiting for Docker events.")
 	}
-	right := top + "\n" + s.Panel("IMAGE STORAGE", diskBody, rightWidth, 6, false) + "\n" + s.Panel("EVENTS", strings.Join(eventLines, "\n"), rightWidth, max(1, height-15), false)
+	right := top + "\n" + s.Panel("SOUNDINGS · IMAGE STORAGE", diskBody, rightWidth, 8, false) + "\n" + s.Panel("EVENTS", strings.Join(eventLines, "\n"), rightWidth, max(1, height-18), false)
 	return style.Fit(lipgloss.JoinHorizontal(lipgloss.Top, left, strings.Repeat(" ", tokens.Gap), right), width, height)
 }
 

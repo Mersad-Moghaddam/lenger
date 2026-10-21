@@ -48,7 +48,8 @@ func ImageList(s style.Sheet, items []engine.Image, cursor int, selected map[str
 		lines = append(lines, line)
 	}
 	if len(items) == 0 {
-		lines = append(lines, "", "No matching images.", "Press p to pull an image or / to change the filter.")
+		next := "Press p to pull an image, or / to change the filter."
+		return s.Panel(fmt.Sprintf("IMAGES  %d", len(items)), components.Empty(s, "No images in this harbor.", next, max(1, width-tokens.PanelFrame-tokens.InsetX*2)), width, height, true)
 	}
 	return s.Panel(fmt.Sprintf("IMAGES  %d", len(items)), strings.Join(lines, "\n"), width, height, true)
 }
