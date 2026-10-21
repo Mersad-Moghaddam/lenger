@@ -1,0 +1,33 @@
+# Maintainer: Mersad Moghaddam <https://github.com/Mersad-Moghaddam>
+pkgname=lenger-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Fast, low-ceremony TUI for Docker images, registries, and containers (prebuilt binary)"
+arch=('x86_64' 'aarch64' 'armv7h')
+url="https://github.com/Mersad-Moghaddam/lenger"
+license=('MIT')
+provides=('lenger')
+conflicts=('lenger')
+depends=('glibc')
+optdepends=(
+    'docker: local daemon management'
+    'docker-compose: multi-container project orchestration'
+    'trivy: container vulnerability scanning'
+    'grype: alternative vulnerability scanning'
+)
+source_x86_64=("$url/releases/download/v$pkgver/lenger_${pkgver}_linux_amd64.tar.gz")
+source_aarch64=("$url/releases/download/v$pkgver/lenger_${pkgver}_linux_arm64.tar.gz")
+source_armv7h=("$url/releases/download/v$pkgver/lenger_${pkgver}_linux_armv7.tar.gz")
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+sha256sums_armv7h=('SKIP')
+
+package() {
+    install -Dm755 lenger "$pkgdir/usr/bin/lenger"
+    if [ -f lenger.desktop ]; then
+        install -Dm644 lenger.desktop "$pkgdir/usr/share/applications/lenger.desktop"
+    fi
+    if [ -f LICENSE ]; then
+        install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    fi
+}

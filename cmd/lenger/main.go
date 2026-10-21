@@ -33,7 +33,8 @@ func main() {
 
 func run() error {
 	if len(os.Args) > 1 && os.Args[1] == "setup-omarchy" {
-		fmt.Print(omarchy.Setup())
+		apply := len(os.Args) > 2 && (os.Args[2] == "--apply" || os.Args[2] == "-y")
+		fmt.Print(omarchy.Setup(apply))
 		return nil
 	}
 	flags := flag.NewFlagSet("lenger", flag.ContinueOnError)

@@ -1,14 +1,57 @@
 version: 2
+
 project_name: lenger
+
+before:
+  hooks:
+    - go mod tidy
+
 builds:
-  - main: ./cmd/lenger
+  - id: lenger
+    main: ./cmd/lenger
     binary: lenger
-    env: [CGO_ENABLED=0]
-    goos: [linux]
-    goarch: [amd64, arm64]
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - '7'
+    ignore:
+      - goos: darwin
+        goarch: arm
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
 archives:
-  - formats: [tar.gz]
+  - id: default
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    files:
+      - LICENSE*
+      - README*
+      - packaging/lenger.desktop
+
 checksum:
-  name_template: checksums.txt
-release:
-  disable: true
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'

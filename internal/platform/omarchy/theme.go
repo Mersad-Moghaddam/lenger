@@ -124,8 +124,3 @@ func (s Source) Watch(ctx context.Context, emit func(tokens.Palette) error) erro
 		}
 	}
 }
-
-// Setup prints integration suggestions without changing desktop configuration.
-func Setup() string {
-	return fmt.Sprintln("# Review before adding to ~/.config/hypr/bindings.conf:\n# Suggested unused binding: Super+Alt+D\n# Launch lenger with your installed Omarchy TUI helper; helper compatibility is not verified.\n# No files were changed.")
-}

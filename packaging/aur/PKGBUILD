@@ -1,0 +1,37 @@
+# Maintainer: Mersad Moghaddam <https://github.com/Mersad-Moghaddam>
+pkgname=lenger
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Fast, low-ceremony TUI for Docker images, registries, and containers"
+arch=('x86_64' 'aarch64' 'armv7h')
+url="https://github.com/Mersad-Moghaddam/lenger"
+license=('MIT')
+depends=('glibc')
+makedepends=('go')
+optdepends=(
+    'docker: local daemon management'
+    'docker-compose: multi-container project orchestration'
+    'trivy: container vulnerability scanning'
+    'grype: alternative vulnerability scanning'
+)
+install=lenger.install
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz"
+        "lenger.desktop")
+sha256sums=('SKIP'
+            'SKIP')
+
+build() {
+    cd "$pkgname-$pkgver"
+    export CGO_ENABLED=0
+    export GOFLAGS="-trimpath -mod=readonly -modcacherw"
+    go build -ldflags="-s -w -X main.version=$pkgver" -o build/lenger ./cmd/lenger
+}
+
+package() {
+    cd "$pkgname-$pkgver"
+    install -Dm755 build/lenger "$pkgdir/usr/bin/lenger"
+    install -Dm644 "$srcdir/lenger.desktop" "$pkgdir/usr/share/applications/lenger.desktop"
+    if [ -f LICENSE ]; then
+        install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    fi
+}

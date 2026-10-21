@@ -1,0 +1,7 @@
+post_install() {
+    echo ":: Run 'lenger setup-omarchy' to configure your desktop keybinding (Super+Alt+D)."
+}
+
+post_upgrade() {
+    post_install
+}
