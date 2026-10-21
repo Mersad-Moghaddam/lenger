@@ -3,7 +3,9 @@ package docker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"math"
 	"net/netip"
@@ -12,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/containerd/errdefs"
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/mount"
 	"github.com/moby/moby/api/types/network"
@@ -93,20 +96,77 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 // ContainerStats returns one immediate sample. The caller computes CPU percent
 // from cumulative totals so the daemon never waits for a second sample.
 func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.ContainerStats, error) {
+	inspection, err := e.client.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
+	if err != nil {
+		return engine.ContainerStats{}, safeStatsInspectionError(err)
+	}
+	if inspection.Container.State == nil || !inspection.Container.State.Running {
+		return engine.ContainerStats{State: engine.TelemetryUnavailable}, nil
+	}
 	result, err := e.client.ContainerStats(ctx, id, client.ContainerStatsOptions{Stream: false})
 	if err != nil {
+		if (errdefs.IsConflict(err) || errdefs.IsNotFound(err) || errdefs.IsInvalidArgument(err)) && strings.Contains(strings.ToLower(err.Error()), "not running") {
+			return e.confirmStatsUnavailable(ctx, id, err)
+		}
 		return engine.ContainerStats{}, fmt.Errorf("read container stats: %w", err)
 	}
 	defer func() { _ = result.Body.Close() }()
-	var response container.StatsResponse
-	if err := json.NewDecoder(result.Body).Decode(&response); err != nil {
+	var raw json.RawMessage
+	if err := json.NewDecoder(result.Body).Decode(&raw); err != nil {
+		if errors.Is(err, io.EOF) {
+			_ = result.Body.Close()
+			return e.confirmStatsUnavailable(ctx, id, err)
+		}
 		return engine.ContainerStats{}, fmt.Errorf("decode container stats: %w", err)
 	}
+	var response container.StatsResponse
+	if err := json.Unmarshal(raw, &response); err != nil {
+		return engine.ContainerStats{}, fmt.Errorf("decode container stats: %w", err)
+	}
+	var fields map[string]json.RawMessage
+	_ = json.Unmarshal(raw, &fields)
+	if len(fields) == 0 {
+		_ = result.Body.Close()
+		return e.confirmStatsUnavailable(ctx, id, errors.New("empty container stats response"))
+	}
+	var cpuFields struct {
+		Usage map[string]json.RawMessage `json:"cpu_usage"`
+	}
+	_ = json.Unmarshal(fields["cpu_stats"], &cpuFields)
+	total, totalPresent := cpuFields.Usage["total_usage"]
+	has := func(group string, keys ...string) bool {
+		value, exists := fields[group]
+		if !exists || string(value) == "null" {
+			return false
+		}
+		if len(keys) == 0 {
+			return true
+		}
+		var nested map[string]json.RawMessage
+		if json.Unmarshal(value, &nested) != nil {
+			return false
+		}
+		for _, key := range keys {
+			v, ok := nested[key]
+			if !ok || string(v) == "null" {
+				return false
+			}
+		}
+		return true
+	}
 	out := engine.ContainerStats{
-		At: response.Read, CPUTotal: response.CPUStats.CPUUsage.TotalUsage,
+		State:            engine.TelemetryActive,
+		CPUAvailable:     has("cpu_stats", "system_cpu_usage") && totalPresent && string(total) != "null" && !response.Read.IsZero(),
+		MemoryAvailable:  has("memory_stats", "usage", "limit"),
+		NetworkAvailable: has("networks"), BlockAvailable: has("blkio_stats", "io_service_bytes_recursive"),
+		PIDsAvailable: has("pids_stats", "current"),
+		At:            response.Read, CPUTotal: response.CPUStats.CPUUsage.TotalUsage,
 		SystemTotal: response.CPUStats.SystemUsage, OnlineCPUs: response.CPUStats.OnlineCPUs,
 		Memory: response.MemoryStats.Usage, MemoryLimit: response.MemoryStats.Limit,
 		PIDs: response.PidsStats.Current,
+	}
+	if out.OnlineCPUs == 0 {
+		out.OnlineCPUs = uint32(len(response.CPUStats.CPUUsage.PercpuUsage))
 	}
 	if cache := response.MemoryStats.Stats["inactive_file"]; cache > 0 && cache < out.Memory {
 		out.Memory -= cache
@@ -124,6 +184,21 @@ func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.Containe
 		}
 	}
 	return out, nil
+}
+
+func safeStatsInspectionError(cause error) error {
+	return &engine.ClassifiedError{Category: "stats-inspection", Message: "Could not inspect container for telemetry.", Cause: cause}
+}
+
+func (e *Engine) confirmStatsUnavailable(ctx context.Context, id string, cause error) (engine.ContainerStats, error) {
+	inspection, err := e.client.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
+	if err != nil {
+		return engine.ContainerStats{}, safeStatsInspectionError(err)
+	}
+	if inspection.Container.State != nil && !inspection.Container.State.Running {
+		return engine.ContainerStats{State: engine.TelemetryUnavailable}, nil
+	}
+	return engine.ContainerStats{}, &engine.ClassifiedError{Category: "stats-unavailable", Message: "Container telemetry sample is unavailable.", Cause: cause}
 }
 
 // CreateContainer applies a validated run spec and returns the new container ID.

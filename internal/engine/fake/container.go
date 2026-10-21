@@ -71,7 +71,7 @@ func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.Containe
 	}
 	c := e.containers[n]
 	if !c.Running() {
-		return engine.ContainerStats{}, fmt.Errorf("container is not running")
+		return engine.ContainerStats{State: engine.TelemetryUnavailable}, nil
 	}
 	memory := []uint64{96_000_000, 512_000_000, 18_000_000}[n%3]
 	network := []uint64{48_000_000, 12_000_000, 3_000_000}[n%3]
@@ -81,6 +81,8 @@ func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.Containe
 	system := uint64(now.UnixMilli()) * 1_000_000
 	online := uint32(4)
 	return engine.ContainerStats{
+		State:        engine.TelemetryActive,
+		CPUAvailable: true, MemoryAvailable: true, NetworkAvailable: true, BlockAvailable: true, PIDsAvailable: true,
 		At: now, CPUTotal: uint64(float64(system) / 100 * percent / float64(online)),
 		SystemTotal: system, OnlineCPUs: online, Memory: memory, MemoryLimit: 1_000_000_000,
 		NetworkRX: network, NetworkTX: network / 3, BlockRead: block, BlockWrite: block / 2,

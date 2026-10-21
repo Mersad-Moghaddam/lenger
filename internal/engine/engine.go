@@ -93,19 +93,43 @@ type RunSpec struct {
 // CPU and system totals are cumulative; callers derive a percentage from two
 // samples taken close together.
 type ContainerStats struct {
-	At                    time.Time
-	CPUTotal, SystemTotal uint64
-	OnlineCPUs            uint32
-	Memory, MemoryLimit   uint64
-	NetworkRX, NetworkTX  uint64
-	BlockRead, BlockWrite uint64
-	PIDs                  uint64
+	State                                                                          TelemetryState
+	CPUAvailable, MemoryAvailable, NetworkAvailable, BlockAvailable, PIDsAvailable bool
+	At                                                                             time.Time
+	CPUTotal, SystemTotal                                                          uint64
+	OnlineCPUs                                                                     uint32
+	Memory, MemoryLimit                                                            uint64
+	NetworkRX, NetworkTX                                                           uint64
+	BlockRead, BlockWrite                                                          uint64
+	PIDs                                                                           uint64
+}
+
+// TelemetryState distinguishes fresh samples from session history and absence.
+type TelemetryState int
+
+const (
+	TelemetryActive TelemetryState = iota
+	TelemetrySampled
+	TelemetryUnavailable
+)
+
+// CPUPercent derives a percentage from cumulative samples. A measured zero is
+// available; missing samples, resets, and non-positive intervals are not.
+func (s ContainerStats) CPUPercent(previous ContainerStats) (float64, bool) {
+	if !s.CPUAvailable || !previous.CPUAvailable || s.State == TelemetryUnavailable || previous.State == TelemetryUnavailable ||
+		!s.At.After(previous.At) || s.OnlineCPUs == 0 || s.SystemTotal <= previous.SystemTotal || s.CPUTotal < previous.CPUTotal {
+		return 0, false
+	}
+	return float64(s.CPUTotal-previous.CPUTotal) / float64(s.SystemTotal-previous.SystemTotal) * float64(s.OnlineCPUs) * 100, true
 }
 
 // LogOptions controls one bounded or following container log stream.
 type LogOptions struct {
 	Follow bool
 	Tail   int
+	Until  time.Time
+	// Previous requests a bounded historical read. Until must be the restart boundary.
+	Previous bool
 }
 
 // LogEntry is one demultiplexed log line with its optional daemon timestamp.

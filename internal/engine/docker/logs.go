@@ -20,11 +20,25 @@ func (e *Engine) Logs(ctx context.Context, id string, opts engine.LogOptions, em
 	if opts.Tail <= 0 {
 		opts.Tail = 200
 	}
+	if opts.Previous {
+		if opts.Until.IsZero() {
+			return fmt.Errorf("previous logs require a restart boundary")
+		}
+		opts.Follow = false
+	}
+	until := ""
+	if !opts.Until.IsZero() {
+		until = opts.Until.Format(time.RFC3339)
+	}
 	body, err := e.client.ContainerLogs(ctx, id, client.ContainerLogsOptions{
 		ShowStdout: true, ShowStderr: true, Follow: opts.Follow,
-		Timestamps: true, Tail: strconv.Itoa(opts.Tail),
+		Timestamps: true, Tail: strconv.Itoa(opts.Tail), Until: until,
 	})
 	if err != nil {
+		text := strings.ToLower(err.Error())
+		if strings.Contains(text, "logging driver") && strings.Contains(text, "does not support reading") {
+			return fmt.Errorf("read container logs: %w", engine.ErrLogsNotSupported)
+		}
 		return fmt.Errorf("read container logs: %w", err)
 	}
 	defer body.Close() //nolint:errcheck // The stream/context error is authoritative.

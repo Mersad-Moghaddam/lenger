@@ -3,24 +3,106 @@ package docker
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
+	"github.com/docker/go-connections/sockets"
+	"github.com/docker/go-connections/tlsconfig"
 	"github.com/moby/moby/client"
 )
 
 // Engine owns one API-negotiating Moby client.
-type Engine struct{ client *client.Client }
+type Engine struct {
+	client    *client.Client
+	transport *failedResponseTransport
+}
 
 // New respects DOCKER_HOST, TLS settings and the standard proxy environment.
 func New() (*Engine, error) {
-	c, err := client.New(client.FromEnv)
+	host := os.Getenv(client.EnvOverrideHost)
+	if host == "" {
+		host = client.DefaultDockerHost
+	}
+	u, err := client.ParseHostURL(host)
+	if err != nil {
+		return nil, engine.Classify(err)
+	}
+	transport := &http.Transport{}
+	if err := sockets.ConfigureTransport(transport, u.Scheme, u.Host); err != nil {
+		return nil, engine.Classify(err)
+	}
+	if certPath := os.Getenv(client.EnvOverrideCertPath); certPath != "" {
+		config, err := tlsconfig.Client(tlsconfig.Options{
+			CAFile: filepath.Join(certPath, "ca.pem"), CertFile: filepath.Join(certPath, "cert.pem"), KeyFile: filepath.Join(certPath, "key.pem"),
+			InsecureSkipVerify: os.Getenv(client.EnvTLSVerify) == "", MinVersion: tls.VersionTLS12,
+		})
+		if err != nil {
+			return nil, engine.Classify(err)
+		}
+		transport.TLSClientConfig = config
+	}
+	wrapped := &failedResponseTransport{base: transport}
+	opts := []client.Opt{client.WithHost(host), client.WithAPIVersionFromEnv(), client.WithHTTPClient(&http.Client{Transport: wrapped, CheckRedirect: client.CheckRedirect})}
+	if transport.TLSClientConfig != nil {
+		opts = append(opts, client.WithScheme("https"))
+	}
+	c, err := client.New(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("create Docker client: %w", err)
 	}
-	return &Engine{client: c}, nil
+	return &Engine{client: c, transport: wrapped}, nil
+}
+
+// Moby consumes failed HTTP response bodies internally without returning them
+// to the adapter. Close those bodies when its error decoder finishes reading.
+type failedResponseTransport struct{ base http.RoundTripper }
+
+func (t *failedResponseTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	response, err := t.base.RoundTrip(request)
+	if err != nil {
+		return response, err
+	}
+	if response.StatusCode >= http.StatusBadRequest && response.Body != nil {
+		response.Body = &failedResponseBody{ReadCloser: response.Body}
+	}
+	return response, nil
+}
+
+func (t *failedResponseTransport) CloseIdleConnections() {
+	if closer, ok := t.base.(interface{ CloseIdleConnections() }); ok {
+		closer.CloseIdleConnections()
+	}
+}
+
+type failedResponseBody struct {
+	io.ReadCloser
+	read   int
+	closed bool
+}
+
+func (b *failedResponseBody) Read(p []byte) (int, error) {
+	n, err := b.ReadCloser.Read(p)
+	b.read += n
+	// Moby limits error decoding to 1 MiB; it may not read EOF at that limit.
+	if err != nil || b.read >= 1<<20 {
+		_ = b.Close()
+	}
+	return n, err
+}
+
+func (b *failedResponseBody) Close() error {
+	if b.closed {
+		return nil
+	}
+	b.closed = true
+	return b.ReadCloser.Close()
 }
 
 // ListImages reads all local image summaries.
@@ -201,4 +283,9 @@ func (e *Engine) Events(ctx context.Context, emit func(engine.Event) error) erro
 }
 
 // Close closes idle transport connections.
-func (e *Engine) Close() error { return e.client.Close() }
+func (e *Engine) Close() error {
+	if e.transport != nil {
+		e.transport.CloseIdleConnections()
+	}
+	return e.client.Close()
+}

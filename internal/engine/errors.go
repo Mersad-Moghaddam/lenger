@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// ErrLogsNotSupported identifies drivers without readable container logs.
+var ErrLogsNotSupported = errors.New("logging driver does not support reading logs")
+
 // ClassifiedError provides safe, actionable failure text without credentials.
 type ClassifiedError struct {
 	Category, Message, Suggestion string

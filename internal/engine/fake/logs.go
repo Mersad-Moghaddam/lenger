@@ -14,6 +14,12 @@ func (e *Engine) Logs(ctx context.Context, id string, opts engine.LogOptions, em
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if opts.Previous {
+		if opts.Until.IsZero() {
+			return fmt.Errorf("previous logs require a restart boundary")
+		}
+		opts.Follow = false
+	}
 	e.mu.Lock()
 	n := slices.IndexFunc(e.containers, func(c engine.Container) bool { return c.ID == id || c.Name == id })
 	if n < 0 {
@@ -29,9 +35,19 @@ func (e *Engine) Logs(ctx context.Context, id string, opts engine.LogOptions, em
 	}
 	base := time.Date(2026, 10, 21, 12, 0, 0, 0, time.UTC)
 	const seed = 40
-	start := max(0, seed-tail)
-	for line := start; line < seed; line++ {
-		if err := emit(fixtureLogLine(name, line, base.Add(time.Duration(line-seed)*time.Second))); err != nil {
+	end := seed
+	if !opts.Until.IsZero() {
+		for end > 0 && !base.Add(time.Duration(end-1-seed)*time.Second).Before(opts.Until) {
+			end--
+		}
+	}
+	start := max(0, end-tail)
+	for line := start; line < end; line++ {
+		at := base.Add(time.Duration(line-seed) * time.Second)
+		if !opts.Until.IsZero() && !at.Before(opts.Until) {
+			continue
+		}
+		if err := emit(fixtureLogLine(name, line, at)); err != nil {
 			return err
 		}
 	}
@@ -49,6 +65,9 @@ func (e *Engine) Logs(ctx context.Context, id string, opts engine.LogOptions, em
 		case <-ctx.Done():
 			return ctx.Err()
 		case at := <-ticker.C:
+			if !opts.Until.IsZero() && !at.Before(opts.Until) {
+				return nil
+			}
 			if err := emit(fixtureLogLine(name, line, at)); err != nil {
 				return err
 			}
