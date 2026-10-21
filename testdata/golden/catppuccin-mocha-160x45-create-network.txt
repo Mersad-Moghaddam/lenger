@@ -1,6 +1,6 @@
 @ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
-1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                
-                                                            ==========                                                                                          
+1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                   
+                                   ==========                                                                                                                   
 +------------------------------------------------------------------+  +----------------------------------------------------------------------------------------+
 |  NETWORKS  4                                                     |  |  NETWORK DETAIL                                                                        |
 |  filter —                                                        |  |  bridge · bridge                                                                       |

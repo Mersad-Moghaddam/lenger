@@ -54,7 +54,14 @@ func (m *Model) Render() string {
 	case m.err != nil:
 		body = s.Panel("DOCKER NEEDS ATTENTION", m.err.Message+"\n\n"+m.err.Suggestion+"\n\nR retry   q quit\nFor an offline preview: LENGER_ENGINE=fake lenger", w, height, true)
 	case m.tab == 0:
-		body = views.Dashboard(s, m.store, m.eventHistory, w, height, m.fixture)
+		items := m.containers()
+		var inspect *engine.ContainerInspection
+		if len(items) > 0 {
+			if i, ok := m.containerIns[items[m.containerCursor].ID]; ok {
+				inspect = &i
+			}
+		}
+		body = views.Containers(s, items, m.containerCursor, m.selectedContain, m.containerFilter, inspect, m.containerDetail, m.containerRaw, m.stats, m.statCPU, m.statHistory, w, height, m.clock)
 	case m.tab == 1:
 		items := m.items()
 		var inspect *engine.Inspection
@@ -65,6 +72,10 @@ func (m *Model) Render() string {
 		}
 		body = views.Images(s, items, m.cursor, m.selected, inspect, m.detail, []string{"name", "size", "age"}[m.sortMode], m.filter, w, height, m.clock)
 	case m.tab == 2:
+		body = views.Volumes(s, m.volumes(), m.volumeCursor, m.volumeFilter, w, height, m.clock)
+	case m.tab == 3:
+		body = views.Networks(s, m.networks(), m.networkCursor, m.networkFilter, w, height, m.clock)
+	default:
 		items := m.containers()
 		var inspect *engine.ContainerInspection
 		if len(items) > 0 {
@@ -73,31 +84,17 @@ func (m *Model) Render() string {
 			}
 		}
 		body = views.Containers(s, items, m.containerCursor, m.selectedContain, m.containerFilter, inspect, m.containerDetail, m.containerRaw, m.stats, m.statCPU, m.statHistory, w, height, m.clock)
-	case m.tab == 3:
-		body = views.Projects(s, m.projects(), m.projectCursor, m.projectFilter, m.composeStream, w, height, m.clock)
-	case m.tab == 4:
-		body = views.Volumes(s, m.volumes(), m.volumeCursor, m.volumeFilter, w, height, m.clock)
-	case m.tab == 5:
-		body = views.Networks(s, m.networks(), m.networkCursor, m.networkFilter, w, height, m.clock)
-	case m.tab == 6:
-		body = views.System(s, m.usage, m.daemonInfo, m.usageLoaded, m.usageErr, w, height, m.fixture)
-	default:
-		body = views.Dashboard(s, m.store, m.eventHistory, w, height, m.fixture)
 	}
 	footer := "? help   : palette   c cleanup   p pull   / filter   J jobs   q quit"
 	switch m.tab {
+	case 0:
+		footer = "x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup"
 	case 1:
 		footer = "p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup"
 	case 2:
-		footer = "x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup"
-	case 3:
-		footer = "u up  d down  r restart  l stream  / filter  c cleanup  q quit"
-	case 4:
 		footer = "d remove unused  / filter  c cleanup  R refresh"
-	case 5:
+	case 3:
 		footer = "c create  d remove  / filter  R refresh  q quit"
-	case 6:
-		footer = "c cleanup  R refresh  ? help  q quit"
 	}
 	running := 0
 	for _, j := range m.jobList {
@@ -128,13 +125,11 @@ func (m *Model) overlayContent() (string, string) {
 	case "filter":
 		title, scope := "Filter images", "repository, tag, or image ID"
 		switch m.tab {
-		case 2:
+		case 0:
 			title, scope = "Filter containers", "name, image, state, project, or ID"
-		case 3:
-			title, scope = "Filter projects", "project name, status, or service"
-		case 4:
+		case 2:
 			title, scope = "Filter volumes", "name, driver, or mountpoint"
-		case 5:
+		case 3:
 			title, scope = "Filter networks", "name, driver, scope, or ID"
 		}
 		return title, m.input.View() + "\n\nMatches " + scope + ".\nenter apply   esc back"

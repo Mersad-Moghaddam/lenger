@@ -14,7 +14,7 @@ import (
 
 // TabNames returns navigation labels without shared mutable state.
 func TabNames() []string {
-	return []string{"Dashboard", "Images", "Containers", "Projects", "Volumes", "Networks", "System"}
+	return []string{"Containers", "Images", "Volumes", "Networks"}
 }
 
 // Tabs renders compact numbered navigation with a signature active underline.

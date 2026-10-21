@@ -1,8 +1,8 @@
 @ LENGER   Anchor your containers.                    - fixture engine · offline
-1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
-                     =====                                                      
+1 Con  2 Ima  3 Vol  4 Net                                                      
+=====                                                                           
 +------------------------------------------------------------------------------+
-|  P+----------------------------------------------------------------------+   |
+|  C+----------------------------------------------------------------------+   |
 |  f|  Compose Project Action                                              |   |
 |  >|  PROJECT                                                             |   |
 |   |    storefront                                                        |   |
@@ -19,6 +19,6 @@
 |   |  enter/y confirm   esc/n cancel                                      |   |
 |   +----------------------------------------------------------------------+   |
 +------------------------------------------------------------------------------+
-u up  d down  r restart  l stream  / filter  c cleanup  q quit   v 0 jobs       
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filt
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

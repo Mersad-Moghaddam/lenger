@@ -1,20 +1,20 @@
 @ LENGER   Anchor your containers.                    - fixture engine · offline
-1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+1 Con  2 Ima  3 Vol  4 Net                                                      
        =====                                                                    
 +---+----------------------------------------------------------------------+---+
 |  I|  Command palette                                                     |   |
 |  s|  [37m> [m [37m                                                               [m  |   |
 |  >|                                                                      |   |
-|   |  > Dashboard                                                         |   |
+|   |  > Containers                                                        |   |
 |   |    Images                                                            |   |
-|   |    Containers                                                        |   |
-|   |    Projects                                                          |   |
 |   |    Volumes                                                           |   |
 |   |    Networks                                                          |   |
-|   |    System info                                                       |   |
 |   |    Pull image                                                        |   |
+|   |    Run from image                                                    |   |
+|   |    Start container                                                   |   |
+|   |    Stop container                                                    |   |
 |   |                                                                      |   |
-|   |                                                                      |   |
+|   |  docker ps -a                                                        |   |
 |   |                                                                      |   |
 |   |  ↑/↓ choose   enter run   esc close                                  |   |
 |   +----------------------------------------------------------------------+   |

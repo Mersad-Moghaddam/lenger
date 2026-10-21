@@ -65,7 +65,7 @@ func TestRunWizardRoutesFieldsWithoutLeakingInput(t *testing.T) {
 
 func TestContainerLogsOverlayPausesWithoutStartingIO(t *testing.T) {
 	m := fixtureModel(t)
-	m.tab = 2
+	m.tab = 0
 	_, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
 	if cmd == nil || m.overlay != "logs" || m.logsID == "" {
 		t.Fatal("logs key did not open a bounded stream")
@@ -83,7 +83,7 @@ func TestContainerLogsOverlayPausesWithoutStartingIO(t *testing.T) {
 
 func TestCleanupRequiresTypedVolumesConfirmation(t *testing.T) {
 	m := fixtureModel(t)
-	m.tab = 6
+	m.tab = 0
 	_, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Text: "c"})
 	if cmd == nil || m.overlay != "cleanup" {
 		t.Fatal("cleanup key did not open a preview")
@@ -107,7 +107,7 @@ func TestCleanupRequiresTypedVolumesConfirmation(t *testing.T) {
 
 func TestVolumeRemovalRejectsUsedVolumesAndWrongConfirmation(t *testing.T) {
 	m := fixtureModel(t)
-	m.tab = 4
+	m.tab = 2
 	items := m.volumes()
 	for n, volume := range items {
 		if volume.Name == "postgres-data" {
@@ -143,7 +143,7 @@ func TestCopyEquivalentUsesTheActiveResource(t *testing.T) {
 	if cmd == nil || !strings.HasPrefix(m.toast, "Copied: docker image inspect ") {
 		t.Fatalf("image copy toast = %q", m.toast)
 	}
-	m.tab = 4
+	m.tab = 2
 	_, cmd = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	if cmd == nil || !strings.HasPrefix(m.toast, "Copied: docker volume inspect ") {
 		t.Fatalf("volume copy toast = %q", m.toast)
@@ -152,7 +152,7 @@ func TestCopyEquivalentUsesTheActiveResource(t *testing.T) {
 
 func TestStatsMessageDerivesCPUFromCumulativeTotals(t *testing.T) {
 	m := fixtureModel(t)
-	m.tab = 2
+	m.tab = 0
 	var id string
 	for _, c := range m.store.Containers {
 		if c.Running() {
@@ -181,7 +181,7 @@ func TestStatsMessageDerivesCPUFromCumulativeTotals(t *testing.T) {
 
 func TestContainerActionConfirmationCarriesSelectedIDs(t *testing.T) {
 	m := fixtureModel(t)
-	m.tab = 2
+	m.tab = 0
 	items := m.containers()
 	if len(items) == 0 {
 		t.Fatal("fixture has no containers")

@@ -14,6 +14,29 @@ import (
 
 var update = flag.Bool("update", false, "explicitly update reviewed gallery goldens")
 
+func TestResourceFrames(t *testing.T) {
+	frames, err := Frames(context.Background(), theme.Names()[0], Size{120, 40})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]string{"containers": "Containers", "images": "Images", "volumes": "Volumes", "networks": "Networks"}
+	for _, frame := range frames {
+		if frame.Name == "dashboard" || frame.Name == "projects" || frame.Name == "system" {
+			t.Errorf("removed resource view remains: %s", frame.Name)
+		}
+		if title, ok := want[frame.Name]; ok {
+			lines := strings.Split(frame.Content, "\n")
+			if !strings.Contains(strings.ToLower(strings.Join(lines[2:5], "\n")), strings.ToLower(title)) {
+				t.Errorf("%s frame does not render its resource panel", frame.Name)
+			}
+			delete(want, frame.Name)
+		}
+	}
+	if len(want) != 0 {
+		t.Fatalf("missing resource frames: %v", want)
+	}
+}
+
 func TestLayout(t *testing.T) {
 	t.Setenv("NO_COLOR", "1")
 	for _, name := range theme.Names() {

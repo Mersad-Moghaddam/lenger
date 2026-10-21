@@ -1,6 +1,6 @@
 @ LENGER   Anchor your containers.                                                            - fixture engine · offline
-1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                        
-             ========                                                                                                   
+1 Containers  2 Images  3 Volumes  4 Networks                                                                           
+              ========                                                                                                  
 +---------------------------------------------------------+  +---------------------------------------------------------+
 |  IMAGES  6                                              |  |  golang:1.23                                            |
 |  sort name  /                                           |  |  000000000000  843.0 MB                                 |

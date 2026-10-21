@@ -1,25 +1,25 @@
 @ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
-1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                
-                                                                        ========                                                                                
-+----------------------------------------------------------------------------------------------+  +------------------------------------------------------------+
-|  SYSTEM · DISK USAGE                                                                         |  |  DAEMON & CLEANUP                                          |
-|  fixture engine · disk usage is synthetic                                                    |  |  DAEMON INFORMATION                                        |
-|  LOCAL STORAGE                                                                               |  |  Daemon telemetry unavailable.                             |
-|  4.4 GB in use · 2.5 GB reclaimable                                                          |  |                                                            |
-|                                                                                              |  |  SMART CLEANUP                                             |
-|  ##########################################################################################  |  |  Preview candidates before deletion.                       |
-|                                                                                              |  |  dangling images, unused volumes, containers               |
-|  category           count       size    reclaim                                              |  |                                                            |
-|  images               0/6     1.8 GB     1+----------------------------------------------------------------------+ checklist.                                |
-|  containers           2/3        0 B      |  Smart cleanup preview                                               |                                           |
-|  volumes              3/4     1.9 GB    64|  CLEANUP CHECKLIST                                                   | confirmation. No forced prunes.           |
-|  build cache            1   700.0 MB   700|  Preview exactly what will be removed, then confirm.                 |                                           |
+1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                   
+============                                                                                                                                                    
++--------------------------------------------------------------+  +--------------------------------------------------------------------------------------------+
+|  CONTAINERS  3                                               |  |  postgres-1                                                                                |
+|  filter —                                                    |  |  db1  + running                                                                            |
+|  > postgres-1            + running postgres:16               |  |  postgres:16                                                                               |
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tc  |  |                                                                                            |
+|    redis-1               - exited redis:7.4                  |  |  RESOURCES                                                                                 |
+|    cpu —  mem —  storefront · 6379/tcp                       |  |  CPU:   7.1%  +++*++**+##*++*++*                                                           |
+|    web-1                 + running nginx:1.27-alpine         |  |  Memory: 512.0 MB / 1.0 GB                                                                 |
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80  |  |  Network: rx 256.0 MB · tx 85.3 MB                                                         |
+|                                           +----------------------------------------------------------------------+                                           |
+|                                           |  Smart cleanup preview                                               |                                           |
+|                                           |  CLEANUP CHECKLIST                                                   |                                           |
+|                                           |  Preview exactly what will be removed, then confirm.                 |                                           |
 |                                           |                                                                      |                                           |
-|  RECLAIMABLE SHARE                        |  > [x] dangling-images        0        0 B                           |                                           |
-|  0                                     25 |    [x] unused-images          3     1.2 GB                           |                                           |
-|  +-------------------------------------+--|    [x] stopped-containers     1        0 B                           |                                           |
-|  =========================================|    [ ] unused-volumes         1    64.0 MB                           |                                           |
-|  58% of used storage is currently reclaima|    [x] build-cache            1   700.0 MB                           |                                           |
+|                                           |  > [x] dangling-images        0        0 B                           |                                           |
+|                                           |    [x] unused-images          3     1.2 GB                           |                                           |
+|                                           |    [x] stopped-containers     1        0 B                           |                                           |
+|                                           |    [ ] unused-volumes         1    64.0 MB                           |                                           |
+|                                           |    [x] build-cache            1   700.0 MB                           |                                           |
 |                                           |                                                                      |                                           |
 |                                           |  SELECTED                                                            |                                           |
 |                                           |  dangling-images 0 · unused-images 3 · stopped-containers 1 · build  |                                           |
@@ -31,15 +31,15 @@
 |                                           |                                                                      |                                           |
 |                                           |  space toggle  enter confirm  R reload  esc close                    |                                           |
 |                                           +----------------------------------------------------------------------+                                           |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-|                                                                                              |  |                                                            |
-+----------------------------------------------------------------------------------------------+  +------------------------------------------------------------+
-c cleanup  R refresh  ? help  q quit   v 0 jobs                                                                                                                 
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
++--------------------------------------------------------------+  +--------------------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup   v 0 jobs                                                        
 Local daemon. No accounts. No telemetry.                                                                                                                        
                                                                                                                                                                 

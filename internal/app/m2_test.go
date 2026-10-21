@@ -11,11 +11,7 @@ import (
 
 func TestProjectsNavigationAndComposeAction(t *testing.T) {
 	m := fixtureModel(t)
-	// Switch to projects tab
-	_, _ = m.Update(tea.KeyPressMsg{Code: '4', Text: "4"})
-	if m.tab != 3 {
-		t.Fatalf("expected tab 3 for Projects, got %d", m.tab)
-	}
+	m.tab = 0
 
 	projs := m.projects()
 	if len(projs) == 0 {
@@ -40,8 +36,8 @@ func TestProjectsNavigationAndComposeAction(t *testing.T) {
 		t.Fatalf("expected overlay closed on Esc, got %s", m.overlay)
 	}
 
-	// Press d to trigger Compose Down
-	_, _ = m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	// Compose commands remain available internally; grouping is wired in Task 10.
+	m.openComposeAction(engine.ComposeDown)
 	if m.overlay != "compose-action" || m.composeAction != engine.ComposeDown {
 		t.Fatalf("expected compose down overlay, got %s / %s", m.overlay, m.composeAction)
 	}
@@ -67,10 +63,10 @@ func TestProjectsNavigationAndComposeAction(t *testing.T) {
 
 func TestNetworksNavigationAndCreation(t *testing.T) {
 	m := fixtureModel(t)
-	// Switch to networks tab (6 key -> index 5)
-	_, _ = m.Update(tea.KeyPressMsg{Code: '6', Text: "6"})
-	if m.tab != 5 {
-		t.Fatalf("expected tab 5 for Networks, got %d", m.tab)
+	// Switch to networks tab (4 key -> index 3)
+	_, _ = m.Update(tea.KeyPressMsg{Code: '4', Text: "4"})
+	if m.tab != 3 {
+		t.Fatalf("expected tab 3 for Networks, got %d", m.tab)
 	}
 
 	nets := m.networks()
@@ -120,12 +116,11 @@ func TestNetworksNavigationAndCreation(t *testing.T) {
 	}
 }
 
-func TestSystemInfoTabLoadsDaemonTelemetry(t *testing.T) {
+func TestDaemonTelemetryLoadsWithoutSystemTab(t *testing.T) {
 	m := fixtureModel(t)
-	// Switch to system tab (7 key -> index 6)
-	_, cmd := m.Update(tea.KeyPressMsg{Code: '7', Text: "7"})
-	if cmd == nil || m.tab != 6 {
-		t.Fatalf("expected tab 6 for System with commands scheduled, got %d", m.tab)
+	cmd := m.loadDaemonInfo()
+	if cmd == nil {
+		t.Fatal("expected loadDaemonInfo command scheduled")
 	}
 
 	// Feed daemon info message
@@ -146,11 +141,8 @@ func TestSystemInfoTabLoadsDaemonTelemetry(t *testing.T) {
 		t.Fatalf("daemonInfo not updated in model: %#v", m.daemonInfo)
 	}
 
-	// Render view
-	text := m.Render()
-	for _, want := range []string{"DAEMON INFORMATION", "27.3.1", "Ubuntu 24.04.1 LTS", "x86_64", "16 CPUs"} {
-		if !strings.Contains(text, want) {
-			t.Fatalf("rendered system tab missing %q:\n%s", want, text)
-		}
+	_, cmd = m.Update(tea.KeyPressMsg{Code: '7', Text: "7"})
+	if cmd != nil || m.tab != 1 {
+		t.Fatal("removed System shortcut changed resource navigation")
 	}
 }

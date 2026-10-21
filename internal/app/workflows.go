@@ -240,7 +240,7 @@ func (m *Model) hasRunningContainers() bool {
 }
 
 func (m *Model) statsTick() tea.Cmd {
-	if m.statsTicking || m.tab != 2 || !m.hasRunningContainers() {
+	if m.statsTicking || m.tab != 0 || !m.hasRunningContainers() {
 		return nil
 	}
 	m.statsTicking = true
@@ -248,7 +248,7 @@ func (m *Model) statsTick() tea.Cmd {
 }
 
 func (m *Model) loadStats() tea.Cmd {
-	if m.statsLoading || m.tab != 2 {
+	if m.statsLoading || m.tab != 0 {
 		return nil
 	}
 	ids := make([]string, 0, len(m.store.Containers))
@@ -564,24 +564,18 @@ func (m *Model) copyEquivalent() tea.Cmd {
 		if items := m.items(); len(items) > 0 {
 			command = "docker image inspect " + items[m.cursor].ID
 		}
-	case 2:
+	case 0:
 		if ids := m.containerIDs(); len(ids) > 0 {
 			command = "docker inspect " + ids[0]
 		}
-	case 3:
-		if items := m.projects(); len(items) > 0 {
-			command = "docker compose -p " + items[m.projectCursor].Name + " ps"
-		}
-	case 4:
+	case 2:
 		if items := m.volumes(); len(items) > 0 {
 			command = "docker volume inspect " + items[m.volumeCursor].Name
 		}
-	case 5:
+	case 3:
 		if items := m.networks(); len(items) > 0 {
 			command = "docker network inspect " + items[m.networkCursor].ID
 		}
-	case 6:
-		command = "docker system df; docker info"
 	}
 	if command == "" {
 		return m.notify("Nothing to copy on this screen.")

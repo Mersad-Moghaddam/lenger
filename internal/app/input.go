@@ -17,13 +17,10 @@ type action struct{ name, key, command string }
 
 func actions() []action {
 	return []action{
-		{"Dashboard", "1", ""},
+		{"Containers", "1", "docker ps -a"},
 		{"Images", "2", "docker image ls"},
-		{"Containers", "3", "docker ps -a"},
-		{"Projects", "4", "docker compose ps"},
-		{"Volumes", "5", "docker volume ls"},
-		{"Networks", "6", "docker network ls"},
-		{"System info", "7", "docker system df; docker info"},
+		{"Volumes", "3", "docker volume ls"},
+		{"Networks", "4", "docker network ls"},
 		{"Pull image", "p", "docker pull <reference>"},
 		{"Run from image", "run-image", "docker run -d <image>"},
 		{"Start container", "x", "docker start <container>"},
@@ -105,6 +102,26 @@ func (m *Model) closeOverlay() {
 	m.input.Blur()
 }
 
+func (m *Model) switchTab(target int) tea.Cmd {
+	if target < 0 || target >= len(components.TabNames()) {
+		return nil
+	}
+	if m.tab == target {
+		return nil
+	}
+	if m.tab == 0 && m.drawerCancel != nil {
+		m.drawerCancel()
+		m.drawerCancel = nil
+	}
+	m.tab = target
+	m.detail = false
+	m.containerDetail = false
+	if m.tab == 0 {
+		return m.loadStats()
+	}
+	return nil
+}
+
 func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	k := msg.String()
 	if m.overlay != "" {
@@ -132,7 +149,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	}
 	if strings.HasPrefix(k, "image:") {
 		id := strings.TrimPrefix(k, "image:")
-		m.tab = 1
+		m.switchTab(1)
 		for n, i := range m.items() {
 			if i.ID == id {
 				m.cursor = n
@@ -143,29 +160,29 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	}
 	if strings.HasPrefix(k, "container:") {
 		id := strings.TrimPrefix(k, "container:")
-		m.tab = 2
+		statsCmd := m.switchTab(0)
 		for n, c := range m.containers() {
 			if c.ID == id {
 				m.containerCursor = n
-				return tea.Batch(m.inspectContainer(), m.loadStats())
+				return tea.Batch(m.inspectContainer(), statsCmd)
 			}
 		}
-		return nil
+		return statsCmd
 	}
 	if strings.HasPrefix(k, "project:") {
 		name := strings.TrimPrefix(k, "project:")
-		m.tab = 3
+		statsCmd := m.switchTab(0)
 		for n, p := range m.projects() {
 			if p.Name == name {
 				m.projectCursor = n
-				return nil
+				return statsCmd
 			}
 		}
-		return nil
+		return statsCmd
 	}
 	if strings.HasPrefix(k, "network:") {
 		id := strings.TrimPrefix(k, "network:")
-		m.tab = 5
+		m.switchTab(3)
 		for n, net := range m.networks() {
 			if net.ID == id || net.Name == id {
 				m.networkCursor = n
@@ -174,23 +191,14 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
-	if number, err := strconv.Atoi(k); err == nil && number >= 1 && number <= 7 {
-		m.tab = number - 1
-		m.detail = false
-		m.containerDetail = false
-		if m.tab == 6 {
-			return tea.Batch(m.loadUsage(), m.loadDaemonInfo())
-		}
-		if m.tab == 2 {
-			return m.loadStats()
-		}
-		return nil
+	if number, err := strconv.Atoi(k); err == nil && number >= 1 && number <= len(components.TabNames()) {
+		return m.switchTab(number - 1)
 	}
 	switch k {
 	case "q":
 		return m.quit()
 	case "esc":
-		if m.tab == 2 && m.containerDetail {
+		if m.tab == 0 && m.containerDetail {
 			m.containerDetail = false
 		} else if m.tab == 1 && m.detail {
 			m.detail = false
@@ -204,7 +212,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	case ":", "ctrl+p":
 		return m.openInput("palette")
 	case "p":
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionPause, false)
 		}
 		return m.openInput("pull-input")
@@ -212,20 +220,14 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		m.overlay = "jobs"
 	case "R":
 		cmds := []tea.Cmd{m.refresh()}
-		if m.tab == 6 {
-			cmds = append(cmds, m.loadUsage(), m.loadDaemonInfo())
-		}
 		return tea.Batch(cmds...)
 	case "D":
 		m.compact = !m.compact
 	case "/":
-		if m.tab == 0 {
-			m.tab = 1
-		}
-		if m.tab >= 1 && m.tab <= 5 {
+		if m.tab >= 0 && m.tab <= 3 {
 			return m.openInput("filter")
 		}
-		return m.notify("Filtering is available on Images, Containers, Projects, Volumes, and Networks.")
+		return m.notify("Filtering is available on Containers, Images, Volumes, and Networks.")
 	case "o":
 		if m.tab == 1 {
 			m.sortMode = (m.sortMode + 1) % 3
@@ -254,43 +256,40 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		if m.tab == 1 {
 			return m.inspect()
 		}
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.inspectContainer()
 		}
 	case "tab":
 		if m.tab == 1 {
 			return m.inspect()
 		}
-		if m.tab == 2 {
+		if m.tab == 0 {
 			m.containerDetail = !m.containerDetail
 			if m.containerDetail {
 				return m.inspectContainer()
 			}
 		}
 	case "u":
-		if m.tab == 3 {
+		if m.tab == 0 {
 			return m.openComposeAction(engine.ComposeUp)
 		}
 	case "r":
 		if m.tab == 1 {
 			return m.openRun()
 		}
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionRestart, false)
 		}
-		if m.tab == 3 {
-			return m.openComposeAction(engine.ComposeRestart)
-		}
 	case "x":
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionStart, false)
 		}
 	case "s":
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionStop, false)
 		}
 	case "K":
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionKill, true)
 		}
 	case "y":
@@ -299,20 +298,17 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		if m.tab == 1 && len(m.removalIDs()) > 0 {
 			m.overlay = "remove"
 		}
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.triggerContainerAction(engine.ActionRemove, true)
 		}
-		if m.tab == 3 {
-			return m.openComposeAction(engine.ComposeDown)
-		}
-		if m.tab == 4 {
+		if m.tab == 2 {
 			return m.openRemoveVolume()
 		}
-		if m.tab == 5 {
+		if m.tab == 3 {
 			return m.openRemoveNetwork()
 		}
 	case "l":
-		if m.tab == 2 {
+		if m.tab == 0 {
 			ids := m.containerIDs()
 			if len(ids) == 0 {
 				return m.notify("No container selected.")
@@ -320,11 +316,11 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			return m.openLogs(ids[0])
 		}
 	case "e":
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m.openExec()
 		}
 	case "c":
-		if m.tab == 5 {
+		if m.tab == 3 {
 			return m.openCreateNetwork()
 		}
 		return m.openCleanup()
@@ -355,7 +351,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			return m.scanSelectedImage()
 		}
 	case "M":
-		if m.tab == 1 || m.tab == 6 {
+		if m.tab == 1 {
 			return m.showDaemonMirrors()
 		}
 	}
@@ -364,6 +360,18 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 
 func (m *Model) moveCursor(key string, delta int) {
 	switch m.tab {
+	case 0:
+		items := m.containers()
+		if key == "shift+down" && len(items) > 0 {
+			m.selectedContain[items[m.containerCursor].ID] = true
+		}
+		if key == "shift+up" && len(items) > 0 {
+			m.selectedContain[items[m.containerCursor].ID] = true
+		}
+		m.containerCursor = max(0, min(m.containerCursor+delta, len(items)-1))
+		if (key == "shift+down" || key == "shift+up") && len(items) > 0 {
+			m.selectedContain[items[m.containerCursor].ID] = true
+		}
 	case 1:
 		items := m.items()
 		if key == "shift+down" && len(items) > 0 {
@@ -377,22 +385,8 @@ func (m *Model) moveCursor(key string, delta int) {
 			m.selected[items[m.cursor].ID] = true
 		}
 	case 2:
-		items := m.containers()
-		if key == "shift+down" && len(items) > 0 {
-			m.selectedContain[items[m.containerCursor].ID] = true
-		}
-		if key == "shift+up" && len(items) > 0 {
-			m.selectedContain[items[m.containerCursor].ID] = true
-		}
-		m.containerCursor = max(0, min(m.containerCursor+delta, len(items)-1))
-		if (key == "shift+down" || key == "shift+up") && len(items) > 0 {
-			m.selectedContain[items[m.containerCursor].ID] = true
-		}
-	case 3:
-		m.projectCursor = max(0, min(m.projectCursor+delta, len(m.projects())-1))
-	case 4:
 		m.volumeCursor = max(0, min(m.volumeCursor+delta, len(m.volumes())-1))
-	case 5:
+	case 3:
 		m.networkCursor = max(0, min(m.networkCursor+delta, len(m.networks())-1))
 	}
 }
@@ -498,33 +492,11 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 			action := results[index]
 			m.closeOverlay()
 			if action.key == "run-image" {
-				m.tab = 1
+				m.switchTab(1)
 				return m.openRun()
 			}
 			if action.key == "cleanup" {
 				return m.openCleanup()
-			}
-			if strings.HasPrefix(action.key, "image:") {
-				id := strings.TrimPrefix(action.key, "image:")
-				m.tab = 1
-				for n, i := range m.items() {
-					if i.ID == id {
-						m.cursor = n
-						return m.inspect()
-					}
-				}
-				return nil
-			}
-			if strings.HasPrefix(action.key, "container:") {
-				id := strings.TrimPrefix(action.key, "container:")
-				m.tab = 2
-				for n, c := range m.containers() {
-					if c.ID == id {
-						m.containerCursor = n
-						return tea.Batch(m.inspectContainer(), m.loadStats())
-					}
-				}
-				return nil
 			}
 			return m.key(tea.KeyPressMsg{Code: []rune(action.key)[0], Text: action.key})
 		}
@@ -846,18 +818,18 @@ func (m *Model) mouse(x, y int) tea.Cmd {
 			}
 			end := offset + len(label) + tokens.Gap
 			if x >= offset && x < end {
-				m.tab = n
-				m.detail = false
-				m.containerDetail = false
-				if n == 6 {
-					return m.loadUsage()
-				}
-				if n == 2 {
-					return m.loadStats()
-				}
-				return nil
+				return m.switchTab(n)
 			}
 			offset = end
+		}
+	}
+	if m.tab == 0 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
+		row := y - tokens.HeaderHeight - tokens.PanelFrame - 1
+		capacity := max(1, m.height-tokens.HeaderHeight-tokens.FooterHeight-tokens.PanelFrame-tokens.InsetY*2)
+		start := max(0, m.containerCursor-capacity+1)
+		index := start + row
+		if index < len(m.containers()) {
+			m.containerCursor = index
 		}
 	}
 	if m.tab == 1 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
@@ -870,15 +842,6 @@ func (m *Model) mouse(x, y int) tea.Cmd {
 		}
 	}
 	if m.tab == 2 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
-		row := y - tokens.HeaderHeight - tokens.PanelFrame - 1
-		capacity := max(1, m.height-tokens.HeaderHeight-tokens.FooterHeight-tokens.PanelFrame-tokens.InsetY*2)
-		start := max(0, m.containerCursor-capacity+1)
-		index := start + row
-		if index < len(m.containers()) {
-			m.containerCursor = index
-		}
-	}
-	if m.tab == 4 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
 		row := y - tokens.HeaderHeight - tokens.PanelFrame - 1
 		capacity := max(1, m.height-tokens.HeaderHeight-tokens.FooterHeight-tokens.PanelFrame-tokens.InsetY*2)
 		start := max(0, m.volumeCursor-capacity+1)

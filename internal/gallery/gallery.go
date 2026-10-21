@@ -60,10 +60,10 @@ func Frames(ctx context.Context, name string, size Size) ([]Frame, error) {
 		overlay string
 	}
 	screens := []screen{
-		{"dashboard", 0, ""}, {"images", 1, ""}, {"containers", 2, ""}, {"projects", 3, ""}, {"volumes", 4, ""}, {"networks", 5, ""}, {"system", 6, ""},
+		{"containers", 0, ""}, {"images", 1, ""}, {"volumes", 2, ""}, {"networks", 3, ""},
 		{"pull", 1, "pull"}, {"palette", 1, "palette"}, {"help", 0, "help"}, {"removal", 1, "remove"}, {"jobs", 1, "jobs"},
-		{"run", 1, "run"}, {"logs", 2, "logs"}, {"cleanup", 6, "cleanup"}, {"container-action", 2, "container-action"}, {"exec", 2, "exec"}, {"volume-removal", 4, "remove-volume"},
-		{"compose-action", 3, "compose-action"}, {"create-network", 5, "create-network"}, {"remove-network", 5, "remove-network"},
+		{"run", 1, "run"}, {"logs", 0, "logs"}, {"cleanup", 0, "cleanup"}, {"container-action", 0, "container-action"}, {"exec", 0, "exec"}, {"volume-removal", 2, "remove-volume"},
+		{"compose-action", 0, "compose-action"}, {"create-network", 3, "create-network"}, {"remove-network", 3, "remove-network"},
 		{"registry-search", 1, "registry-search"}, {"tag-image", 1, "tag-image"}, {"push-image", 1, "push-image"},
 		{"export-image", 1, "export-image"}, {"import-image", 1, "import-image"}, {"daemon-mirrors", 1, "daemon-mirrors"},
 	}

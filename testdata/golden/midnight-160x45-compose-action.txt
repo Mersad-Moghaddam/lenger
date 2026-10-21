@@ -1,19 +1,19 @@
 @ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
-1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                
-                                     ==========                                                                                                                 
-+------------------------------------------------------------------+  +----------------------------------------------------------------------------------------+
-|  PROJECTS  1                                                     |  |  COMPOSE PROJECT                                                                       |
-|  filter —                                                        |  |  storefront  - partial                                                                 |
-|  > storefront                               - partial   3 svcs   |  |                                                                                        |
-|                                                                  |  |  DIRECTORY                                                                             |
-|                                                                  |  |  /opt/storefront                                                                       |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |  CONFIG FILES                                                                          |
-|                                                                  |  |  /opt/storefront/docker-compose.yml                                                    |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |  SERVICES (3)                                                                          |
-|                                           +----------------------------------------------------------------------+tcp                                        |
-|                                           |  Compose Project Action                                              |/tcp                                       |
+1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                   
+============                                                                                                                                                    
++--------------------------------------------------------------+  +--------------------------------------------------------------------------------------------+
+|  CONTAINERS  3                                               |  |  postgres-1                                                                                |
+|  filter —                                                    |  |  db1  + running                                                                            |
+|  > postgres-1            + running postgres:16               |  |  postgres:16                                                                               |
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tc  |  |                                                                                            |
+|    redis-1               - exited redis:7.4                  |  |  RESOURCES                                                                                 |
+|    cpu —  mem —  storefront · 6379/tcp                       |  |  CPU:   7.1%  +++*++**+##*++*++*                                                           |
+|    web-1                 + running nginx:1.27-alpine         |  |  Memory: 512.0 MB / 1.0 GB                                                                 |
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80  |  |  Network: rx 256.0 MB · tx 85.3 MB                                                         |
+|                                                              |  |  Block I/O: r 64.0 MB · w 32.0 MB                                                          |
+|                                                              |  |  PIDs: 9                                                                                   |
+|                                           +----------------------------------------------------------------------+                                           |
+|                                           |  Compose Project Action                                              |                                           |
 |                                           |  PROJECT                                                             |                                           |
 |                                           |    storefront                                                        |                                           |
 |                                           |                                                                      |                                           |
@@ -28,18 +28,18 @@
 |                                           |                                                                      |                                           |
 |                                           |  enter/y confirm   esc/n cancel                                      |                                           |
 |                                           +----------------------------------------------------------------------+                                           |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-|                                                                  |  |                                                                                        |
-+------------------------------------------------------------------+  +----------------------------------------------------------------------------------------+
-u up  d down  r restart  l stream  / filter  c cleanup  q quit   v 0 jobs                                                                                       
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
+|                                                              |  |                                                                                            |
++--------------------------------------------------------------+  +--------------------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup   v 0 jobs                                                        
 Local daemon. No accounts. No telemetry.                                                                                                                        
                                                                                                                                                                 

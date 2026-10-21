@@ -1,24 +1,24 @@
 @ LENGER   Anchor your containers.                    - fixture engine · offline
-1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+1 Con  2 Ima  3 Vol  4 Net                                                      
 ====+----------------------------------------------------------------------+    
 +---|  Keyboard chart                                                      |---+
-|  H|  1–7       Switch view                                               |   |
-|   |  j/k ↑/↓   Move through the active list                              |a  |
-|   |  enter / i Inspect the selected resource                             |#  |
-|   |  space     Toggle selection (images/containers)                      |#  |
+|  C|  1–7       Switch view                                               |   |
+|  f|  j/k ↑/↓   Move through the active list                              |   |
+|  >|  enter / i Inspect the selected resource                             |   |
+|   |  space     Toggle selection (images/containers)                      |   |
 |   |  shift+↓/↑ Extend selection                                          |   |
-|   |  /         Filter images, containers, or volumes                     |---+
-|   |  o         Cycle image name / size / age sort                        |---+
-+---|  p         Pull image · pause container                              |   |
-+---|  r         Run image · restart container                             |   |
-|  N|  x / s     Start / stop container                                    |0  |
-|  0|  K         Kill container (confirmation)                             |+  |
-|  1|  d         Remove resource (never forced)                            |.  |
+|   |  /         Filter images, containers, or volumes                     |   |
+|   |  o         Cycle image name / size / age sort                        |   |
+|   |  p         Pull image · pause container                              |   |
+|   |  r         Run image · restart container                             |   |
+|   |  x / s     Start / stop container                                    |   |
+|   |  K         Kill container (confirmation)                             |   |
+|   |  d         Remove resource (never forced)                            |   |
 |   |  l         Container logs (follow, pause, filter, save)              |   |
-|  U|  e         Exec a shell in a running container                       |---+
-|  S|  y         Copy equivalent CLI command                               |    
-+---|  … content truncated                                                 |    
-    |  q ctrl+c  Quit and cancel jobs                                      |    
-? he+----------------------------------------------------------------------+obs 
+|   |  e         Exec a shell in a running container                       |   |
+|   |  y         Copy equivalent CLI command                               |   |
+|   |  … content truncated                                                 |   |
++---|  q ctrl+c  Quit and cancel jobs                                      |---+
+x st+----------------------------------------------------------------------+filt
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

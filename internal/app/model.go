@@ -169,7 +169,7 @@ type Model struct {
 	eventHistory []engine.Event
 	err          *engine.ClassifiedError
 
-	// Disk usage is loaded lazily for the System tab and cleanup preview.
+	// Disk usage is loaded lazily for the cleanup preview.
 	usage        engine.SystemUsage
 	usageLoaded  bool
 	usageLoading bool
@@ -190,6 +190,7 @@ type Model struct {
 	themes  chan tokens.Palette
 
 	// Navigation and presentation state.
+	drawerCancel    func()
 	width           int
 	height          int
 	tab             int
@@ -377,7 +378,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.refreshPending = false
 			return m, tea.Batch(m.refresh(), m.loadStats())
 		}
-		if m.tab == 2 && m.err == nil {
+		if m.tab == 0 && m.err == nil {
 			return m, m.loadStats()
 		}
 		return m, nil
@@ -471,13 +472,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.stats[id] = sample
 		}
-		if m.tab == 2 {
+		if m.tab == 0 {
 			return m, m.statsTick()
 		}
 		return m, nil
 	case statsTickMsg:
 		m.statsTicking = false
-		if m.tab != 2 || !m.hasRunningContainers() {
+		if m.tab != 0 || !m.hasRunningContainers() {
 			return m, nil
 		}
 		return m, tea.Batch(m.loadStats(), m.statsTick())
@@ -488,7 +489,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.closeOverlay()
-		m.tab = 2
+		m.tab = 0
 		m.containerDetail = false
 		return m, tea.Batch(m.notify("Container started. Logs are one key away."), m.refresh(), m.loadUsage(), m.loadStats())
 	case cleanupPlanMsg:
@@ -694,9 +695,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if store.Invalidate(e) {
 			m.usageLoaded = false
 			cmds := []tea.Cmd{cmd, m.refresh()}
-			if m.tab == 6 {
-				cmds = append(cmds, m.loadUsage())
-			}
 			return m, tea.Batch(cmds...)
 		}
 		return m, cmd
@@ -849,36 +847,33 @@ func (m *Model) volumes() []engine.Volume {
 
 func (m *Model) activeFilter() string {
 	switch m.tab {
-	case 2:
+	case 0:
 		return m.containerFilter
-	case 3:
-		return m.projectFilter
-	case 4:
+	case 1:
+		return m.filter
+	case 2:
 		return m.volumeFilter
-	case 5:
+	case 3:
 		return m.networkFilter
 	default:
-		return m.filter
+		return ""
 	}
 }
 
 func (m *Model) setActiveFilter(value string) {
 	switch m.tab {
-	case 2:
+	case 0:
 		m.containerFilter = value
 		m.containerCursor = 0
-	case 3:
-		m.projectFilter = value
-		m.projectCursor = 0
-	case 4:
-		m.volumeFilter = value
-		m.volumeCursor = 0
-	case 5:
-		m.networkFilter = value
-		m.networkCursor = 0
-	default:
+	case 1:
 		m.filter = value
 		m.cursor = 0
+	case 2:
+		m.volumeFilter = value
+		m.volumeCursor = 0
+	case 3:
+		m.networkFilter = value
+		m.networkCursor = 0
 	}
 }
 
