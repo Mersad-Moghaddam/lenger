@@ -41,13 +41,17 @@ func Dashboard(s style.Sheet, data store.Store, events []engine.Event, width, he
 	topHeight := max(7, height/2)
 	left := s.Panel("HEALTH", health, leftWidth, topHeight, false) + "\n" + s.Panel("NEEDS ATTENTION", attention, leftWidth, max(1, height-topHeight-1), false)
 	chartWidth := (rightWidth - tokens.Gap) / 2
-	cpu, memory := "Not subscribed\nLive stats arrive in M2.", "Not subscribed\nLive stats arrive in M2."
-	if fixture {
+	cpuText := "Engine telemetry active\nPress 7 for system info"
+	memText := "Host memory active\nPress 7 for system info"
+	if data.Daemon.NCPU > 0 {
+		cpuText = fmt.Sprintf("%d host CPUs\nEngine %s", data.Daemon.NCPU, style.Clean(data.Daemon.ServerVersion))
+		memText = fmt.Sprintf("%s total RAM\nCgroup v%s", components.Bytes(data.Daemon.MemTotal), style.Clean(data.Daemon.CgroupVersion))
+	} else if fixture {
 		series := []float64{2, 4, 7, 18, 12, 9, 4, 5, 8, 11, 15, 13, 10, 12, 18}
-		cpu = "18%  fixture data\n" + chart.Braille(series, max(1, chartWidth-tokens.InsetX*2-tokens.PanelFrame), 2, s.ASCII)
-		memory = "2.4 GB  fixture data\n" + chart.Braille([]float64{1, 1, 2, 2, 3, 3, 4, 5, 5, 5, 5}, max(1, chartWidth-tokens.InsetX*2-tokens.PanelFrame), 2, s.ASCII)
+		cpuText = "18%  fixture data\n" + chart.Braille(series, max(1, chartWidth-tokens.InsetX*2-tokens.PanelFrame), 2, s.ASCII)
+		memText = "2.4 GB  fixture data\n" + chart.Braille([]float64{1, 1, 2, 2, 3, 3, 4, 5, 5, 5, 5}, max(1, chartWidth-tokens.InsetX*2-tokens.PanelFrame), 2, s.ASCII)
 	}
-	top := lipgloss.JoinHorizontal(lipgloss.Top, s.Panel("CPU", cpu, chartWidth, 7, false), strings.Repeat(" ", tokens.Gap), s.Panel("MEMORY", memory, rightWidth-chartWidth-tokens.Gap, 7, false))
+	top := lipgloss.JoinHorizontal(lipgloss.Top, s.Panel("CPU", cpuText, chartWidth, 7, false), strings.Repeat(" ", tokens.Gap), s.Panel("MEMORY", memText, rightWidth-chartWidth-tokens.Gap, 7, false))
 	fraction := 0.0
 	if disk > 0 {
 		fraction = float64(disk-unused) / float64(disk)

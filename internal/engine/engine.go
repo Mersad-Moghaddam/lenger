@@ -44,7 +44,8 @@ type Container struct {
 	Created                                         time.Time
 	Ports                                           []string
 	Mounts                                          []Mount
-	Project, Service                                string
+	Project, Service, ProjectDir                    string
+	ProjectConfigFiles                              []string
 	Labels                                          map[string]string
 }
 
@@ -59,6 +60,15 @@ type Mount struct {
 	RW                                    bool
 }
 
+// HealthProbe represents the latest container healthcheck execution status and diagnostics (CTR-07).
+type HealthProbe struct {
+	Status        string
+	FailingStreak int
+	Start, End    time.Time
+	ExitCode      int
+	Output        string
+}
+
 // ContainerInspection is structured, SDK-independent container metadata.
 type ContainerInspection struct {
 	ID, Name, Image, ImageID, Platform          string
@@ -70,6 +80,7 @@ type ContainerInspection struct {
 	Networks                                    []string
 	Mounts                                      []Mount
 	Labels                                      map[string]string
+	HealthCheck                                 *HealthProbe
 }
 
 // RunSpec contains the options exposed by the run-from-image wizard.
@@ -166,6 +177,62 @@ type Event struct {
 	Err              error
 }
 
+// NetworkEndpoint represents a container attached to a Docker network.
+type NetworkEndpoint struct {
+	ContainerID, Name, IPv4, IPv6, MacAddress string
+}
+
+// Network represents a Docker bridge, overlay, macvlan, or custom network.
+type Network struct {
+	ID, Name, Driver, Scope string
+	Internal, Attachable    bool
+	Ingress, IPv6           bool
+	Subnets, Gateways       []string
+	Containers              []NetworkEndpoint
+	Labels                  map[string]string
+	Created                 time.Time
+}
+
+// DaemonInfo contains system-wide engine and host telemetry (SYS-03).
+type DaemonInfo struct {
+	ID, Name                                           string
+	ServerVersion, APIVersion, MinAPIVersion           string
+	OS, OSType, Arch, KernelVersion                    string
+	Driver, LoggingDriver, CgroupDriver, CgroupVersion string
+	RootDir                                            string
+	NCPU                                               int
+	MemTotal                                           int64
+	SecurityOptions, Warnings                          []string
+}
+
+// ComposeAction is an operation performed on a Compose project.
+type ComposeAction string
+
+const (
+	ComposeUp      ComposeAction = "up"
+	ComposeDown    ComposeAction = "down"
+	ComposeRestart ComposeAction = "restart"
+	ComposePull    ComposeAction = "pull"
+)
+
+// ComposeOptions configures execution of a compose action.
+type ComposeOptions struct {
+	ProjectDir    string
+	ConfigFiles   []string
+	ProjectName   string
+	RemoveVolumes bool
+	Services      []string
+}
+
+// ComposeProject represents a multi-container Docker Compose application (PRJ-01).
+type ComposeProject struct {
+	Name, WorkingDir string
+	ConfigFiles      []string
+	Services         []string
+	Status           string
+	Containers       []Container
+}
+
 // Engine abstracts local daemon access. Stream callbacks must not be retained.
 type Engine interface {
 	ListImages(context.Context) ([]Image, error)
@@ -184,6 +251,16 @@ type Engine interface {
 	ActContainer(context.Context, string, ContainerAction) error
 	Logs(context.Context, string, LogOptions, func(LogEntry) error) error
 	PruneBuildCache(context.Context) (int64, error)
+
+	ListNetworks(context.Context) ([]Network, error)
+	InspectNetwork(context.Context, string) (Network, error)
+	CreateNetwork(context.Context, string, string) (string, error)
+	RemoveNetwork(context.Context, string) error
+	ConnectNetwork(context.Context, string, string) error
+	DisconnectNetwork(context.Context, string, string, bool) error
+
+	DaemonInfo(context.Context) (DaemonInfo, error)
+	Compose(context.Context, ComposeAction, ComposeOptions, func(string) error) error
 
 	Events(context.Context, func(Event) error) error
 	Close() error

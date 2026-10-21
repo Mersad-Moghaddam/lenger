@@ -52,6 +52,20 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 		out.FinishedAt = parseTime(c.State.FinishedAt)
 		if c.State.Health != nil {
 			out.Health = string(c.State.Health.Status)
+			probe := &engine.HealthProbe{
+				Status:        string(c.State.Health.Status),
+				FailingStreak: c.State.Health.FailingStreak,
+			}
+			if len(c.State.Health.Log) > 0 {
+				last := c.State.Health.Log[len(c.State.Health.Log)-1]
+				if last != nil {
+					probe.Start = last.Start
+					probe.End = last.End
+					probe.ExitCode = last.ExitCode
+					probe.Output = last.Output
+				}
+			}
+			out.HealthCheck = probe
 		}
 	}
 	if c.HostConfig != nil {

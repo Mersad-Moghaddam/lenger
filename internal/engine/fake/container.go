@@ -40,6 +40,16 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 	if len(out.Labels) == 0 {
 		out.Labels = map[string]string{"org.opencontainers.image.title": c.Name}
 	}
+	if c.Health != "" {
+		out.HealthCheck = &engine.HealthProbe{
+			Status:        c.Health,
+			FailingStreak: 0,
+			Start:         time.Now().UTC().Add(-15 * time.Second),
+			End:           time.Now().UTC().Add(-14 * time.Second),
+			ExitCode:      0,
+			Output:        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n{\"status\":\"pass\",\"uptime\":10800}",
+		}
+	}
 	if c.State == "exited" {
 		out.FinishedAt = c.Created.Add(time.Hour)
 		out.StartedAt = time.Time{}

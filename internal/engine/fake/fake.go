@@ -18,6 +18,7 @@ type Engine struct {
 	images     []engine.Image
 	containers []engine.Container
 	volumes    []engine.Volume
+	networks   []engine.Network
 	buildCache int64
 	subs       map[uint64]chan engine.Event
 	next       uint64
@@ -44,10 +45,43 @@ func New() *Engine {
 		{Name: "redis-data", Driver: "local", Mountpoint: "/var/lib/docker/volumes/redis-data/_data", Scope: "local", CreatedAt: now.Add(-120 * time.Hour), Size: 96_000_000, RefCount: 1},
 		{Name: "scratch-data", Driver: "local", Mountpoint: "/var/lib/docker/volumes/scratch-data/_data", Scope: "local", CreatedAt: now.Add(-12 * time.Hour), Size: 64_000_000, RefCount: 0},
 	}
+	e.networks = []engine.Network{
+		{
+			ID: "bridge-id", Name: "bridge", Driver: "bridge", Scope: "local",
+			Subnets: []string{"172.17.0.0/16"}, Gateways: []string{"172.17.0.1"},
+			Created: now.Add(-30 * 24 * time.Hour),
+			Containers: []engine.NetworkEndpoint{
+				{ContainerID: "web1", Name: "web-1", IPv4: "172.17.0.2/16"},
+				{ContainerID: "db1", Name: "postgres-1", IPv4: "172.17.0.3/16"},
+			},
+		},
+		{
+			ID: "host-id", Name: "host", Driver: "host", Scope: "local",
+			Created: now.Add(-30 * 24 * time.Hour),
+		},
+		{
+			ID: "none-id", Name: "none", Driver: "null", Scope: "local", Internal: true,
+			Created: now.Add(-30 * 24 * time.Hour),
+		},
+		{
+			ID: "storefront-net-id", Name: "storefront_default", Driver: "bridge", Scope: "local",
+			Subnets: []string{"172.28.0.0/16"}, Gateways: []string{"172.28.0.1"}, Attachable: true,
+			Created: now.Add(-72 * time.Hour),
+			Labels: map[string]string{
+				"com.docker.compose.project": "storefront",
+				"com.docker.compose.network": "default",
+			},
+			Containers: []engine.NetworkEndpoint{
+				{ContainerID: "web1", Name: "web-1", IPv4: "172.28.0.2/16"},
+				{ContainerID: "db1", Name: "postgres-1", IPv4: "172.28.0.3/16"},
+				{ContainerID: "redis1", Name: "redis-1", IPv4: "172.28.0.4/16"},
+			},
+		},
+	}
 	e.containers = []engine.Container{
-		{ID: "web1", Name: "web-1", ImageID: e.images[0].ID, Image: e.images[0].Name(), State: "running", Status: "Up 3 hours", Health: "healthy", Created: now.Add(-3 * time.Hour), Ports: []string{"8080->80/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "web-content", Source: "/var/lib/docker/volumes/web-content/_data", Destination: "/usr/share/nginx/html", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "web"}, Project: "storefront", Service: "web"},
-		{ID: "db1", Name: "postgres-1", ImageID: e.images[1].ID, Image: e.images[1].Name(), State: "running", Status: "Up 1 day", Health: "healthy", Created: now.Add(-24 * time.Hour), Ports: []string{"5432/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "postgres-data", Source: "/var/lib/docker/volumes/postgres-data/_data", Destination: "/var/lib/postgresql/data", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "db"}, Project: "storefront", Service: "db"},
-		{ID: "redis1", Name: "redis-1", ImageID: e.images[2].ID, Image: e.images[2].Name(), State: "exited", Status: "Exited (0)", Created: now.Add(-48 * time.Hour), Ports: []string{"6379/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "redis-data", Source: "/var/lib/docker/volumes/redis-data/_data", Destination: "/data", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "cache"}, Project: "storefront", Service: "cache"},
+		{ID: "web1", Name: "web-1", ImageID: e.images[0].ID, Image: e.images[0].Name(), State: "running", Status: "Up 3 hours", Health: "healthy", Created: now.Add(-3 * time.Hour), Ports: []string{"8080->80/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "web-content", Source: "/var/lib/docker/volumes/web-content/_data", Destination: "/usr/share/nginx/html", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "web"}, Project: "storefront", Service: "web", ProjectDir: "/opt/storefront", ProjectConfigFiles: []string{"/opt/storefront/docker-compose.yml"}},
+		{ID: "db1", Name: "postgres-1", ImageID: e.images[1].ID, Image: e.images[1].Name(), State: "running", Status: "Up 1 day", Health: "healthy", Created: now.Add(-24 * time.Hour), Ports: []string{"5432/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "postgres-data", Source: "/var/lib/docker/volumes/postgres-data/_data", Destination: "/var/lib/postgresql/data", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "db"}, Project: "storefront", Service: "db", ProjectDir: "/opt/storefront", ProjectConfigFiles: []string{"/opt/storefront/docker-compose.yml"}},
+		{ID: "redis1", Name: "redis-1", ImageID: e.images[2].ID, Image: e.images[2].Name(), State: "exited", Status: "Exited (0)", Created: now.Add(-48 * time.Hour), Ports: []string{"6379/tcp"}, Mounts: []engine.Mount{{Type: "volume", Name: "redis-data", Source: "/var/lib/docker/volumes/redis-data/_data", Destination: "/data", RW: true}}, Labels: map[string]string{"com.docker.compose.project": "storefront", "com.docker.compose.service": "cache"}, Project: "storefront", Service: "cache", ProjectDir: "/opt/storefront", ProjectConfigFiles: []string{"/opt/storefront/docker-compose.yml"}},
 	}
 	return e
 }

@@ -302,3 +302,82 @@ func wrapText(text string, width int) []string {
 	}
 	return lines
 }
+
+func (m *Model) composeActionOverlay() string {
+	s := m.sheet
+	lines := []string{
+		s.Heading("PROJECT"),
+		"  " + style.Clean(m.composeProject),
+		"",
+		s.Heading("ACTION"),
+		"  " + style.Clean(string(m.composeAction)),
+		"",
+	}
+
+	volFlag := ""
+	if m.composeAction == engine.ComposeDown {
+		check := "[ ]"
+		if m.composeVolumes {
+			check = "[x]"
+			volFlag = " -v"
+		}
+		lines = append(lines,
+			s.Heading("OPTIONS"),
+			fmt.Sprintf("  %s Remove associated volumes (-v)   %s", check, s.Muted("(press v to toggle)")),
+			"",
+		)
+	}
+
+	cmd := fmt.Sprintf("docker compose -p %s %s%s", m.composeProject, m.composeAction, volFlag)
+	lines = append(lines,
+		s.Heading("COMMAND EQUIVALENT"),
+		"  "+s.Text(cmd, s.Palette.Accent),
+		"",
+		"enter/y confirm   esc/n cancel",
+	)
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) createNetworkOverlay() string {
+	s := m.sheet
+	driver := m.createNetDriver
+	if driver == "" {
+		driver = "bridge"
+	}
+	name := strings.TrimSpace(m.input.Value())
+	if name == "" {
+		name = "<name>"
+	}
+
+	cmd := fmt.Sprintf("docker network create --driver %s %s", driver, name)
+	lines := []string{
+		s.Heading("NETWORK NAME"),
+		"  " + m.input.View(),
+		"",
+		s.Heading("DRIVER"),
+		fmt.Sprintf("  ‹ %s ›   %s", driver, s.Muted("(press tab to toggle)")),
+		"",
+		s.Heading("COMMAND EQUIVALENT"),
+		"  " + s.Text(cmd, s.Palette.Accent),
+		"",
+		"enter create   tab driver   esc cancel",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) removeNetworkOverlay() string {
+	s := m.sheet
+	lines := []string{
+		s.Heading("TARGET NETWORK"),
+		"  " + style.Clean(m.removeNetwork),
+		"",
+		s.Heading("SAFETY CHECK"),
+		"  Active containers must be disconnected before network removal.",
+		"",
+		s.Heading("COMMAND EQUIVALENT"),
+		"  " + s.Text("docker network rm "+m.removeNetwork, s.Palette.Warning),
+		"",
+		"enter/y remove   esc/n cancel",
+	}
+	return strings.Join(lines, "\n")
+}

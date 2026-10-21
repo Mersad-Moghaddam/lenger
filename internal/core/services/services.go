@@ -36,12 +36,13 @@ func (s *Service) Snapshot(ctx context.Context) (store.Snapshot, error) {
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 	var result store.Snapshot
-	var imageErr, containerErr, volumeErr error
+	var imageErr, containerErr, volumeErr, networkErr error
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
 	go func() { defer wg.Done(); result.Images, imageErr = s.engine.ListImages(ctx) }()
 	go func() { defer wg.Done(); result.Containers, containerErr = s.engine.ListContainers(ctx) }()
 	go func() { defer wg.Done(); result.Volumes, volumeErr = s.engine.ListVolumes(ctx) }()
+	go func() { defer wg.Done(); result.Networks, networkErr = s.engine.ListNetworks(ctx) }()
 	wg.Wait()
 	if imageErr != nil {
 		return result, engine.Classify(imageErr)
@@ -52,8 +53,22 @@ func (s *Service) Snapshot(ctx context.Context) (store.Snapshot, error) {
 	if volumeErr != nil {
 		return result, engine.Classify(volumeErr)
 	}
+	if networkErr != nil {
+		return result, engine.Classify(networkErr)
+	}
 	fillVolumeUsers(result.Volumes, result.Containers)
 	return result, nil
+}
+
+// DaemonInfo fetches host and engine telemetry under a deadline (SYS-03).
+func (s *Service) DaemonInfo(ctx context.Context) (engine.DaemonInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+	info, err := s.engine.DaemonInfo(ctx)
+	if err != nil {
+		return engine.DaemonInfo{}, engine.Classify(err)
+	}
+	return info, nil
 }
 
 // Inspect always masks environment values, label values, commands and history.

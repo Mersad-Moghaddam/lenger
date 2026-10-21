@@ -39,6 +39,12 @@ func Classify(err error) *ClassifiedError {
 		category, message, next = "not-found", "The container was not found.", "Refresh the list; it may have been removed by another client."
 	case strings.Contains(text, "no such volume"), strings.Contains(text, "volume not found"):
 		category, message, next = "not-found", "The volume was not found.", "Refresh the list; it may have been removed by another client."
+	case strings.Contains(text, "no such network"), strings.Contains(text, "network not found"):
+		category, message, next = "not-found", "The network was not found.", "Refresh the list; it may have been removed by another client."
+	case strings.Contains(text, "has active endpoints"), strings.Contains(text, "network has active endpoints"):
+		category, message, next = "in-use", "The network still has active container endpoints attached.", "Disconnect all containers before removing this network."
+	case strings.Contains(text, "docker compose"), strings.Contains(text, "compose executable"), strings.Contains(text, "executable file not found in $path"):
+		category, message, next = "compose", "Docker Compose CLI is not installed or accessible in PATH.", "Install the docker-compose-plugin package or ensure 'docker compose' is installed."
 	case strings.Contains(text, "already in use"), strings.Contains(text, "already allocated"), strings.Contains(text, "address already in use"):
 		category, message, next = "conflict", "That name or port is already in use.", "Choose another name or host port, or remove the existing resource."
 	case strings.Contains(text, "is in use by"), strings.Contains(text, "volume is in use"), strings.Contains(text, "cannot remove a running container"):

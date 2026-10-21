@@ -568,17 +568,156 @@ func (m *Model) copyEquivalent() tea.Cmd {
 		if ids := m.containerIDs(); len(ids) > 0 {
 			command = "docker inspect " + ids[0]
 		}
+	case 3:
+		if items := m.projects(); len(items) > 0 {
+			command = "docker compose -p " + items[m.projectCursor].Name + " ps"
+		}
 	case 4:
 		if items := m.volumes(); len(items) > 0 {
 			command = "docker volume inspect " + items[m.volumeCursor].Name
 		}
+	case 5:
+		if items := m.networks(); len(items) > 0 {
+			command = "docker network inspect " + items[m.networkCursor].ID
+		}
 	case 6:
-		command = "docker system df"
+		command = "docker system df; docker info"
 	}
 	if command == "" {
 		return m.notify("Nothing to copy on this screen.")
 	}
 	return tea.Batch(tea.SetClipboard(command), m.notify("Copied: "+command))
+}
+
+func (m *Model) loadDaemonInfo() tea.Cmd {
+	if m.daemonLoading {
+		return nil
+	}
+	m.daemonLoading = true
+	ctx, service := m.ctx, m.service
+	return func() tea.Msg {
+		info, err := service.DaemonInfo(ctx)
+		return daemonInfoMsg{data: info, err: err}
+	}
+}
+
+func (m *Model) openComposeAction(action engine.ComposeAction) tea.Cmd {
+	items := m.projects()
+	if len(items) == 0 {
+		return m.notify("No project selected.")
+	}
+	p := items[m.projectCursor]
+	m.composeProject = p.Name
+	m.composeAction = action
+	m.composeVolumes = false
+	m.overlay = "compose-action"
+	return nil
+}
+
+func (m *Model) confirmComposeAction() tea.Cmd {
+	action := m.composeAction
+	project := m.composeProject
+	removeVols := m.composeVolumes
+	m.overlay = ""
+	return m.runCompose(action, project, removeVols)
+}
+
+func (m *Model) runCompose(action engine.ComposeAction, projectName string, removeVolumes bool) tea.Cmd {
+	var opts engine.ComposeOptions
+	opts.ProjectName = projectName
+	opts.RemoveVolumes = removeVolumes
+
+	for _, p := range m.projects() {
+		if p.Name == projectName {
+			opts.ProjectDir = p.WorkingDir
+			opts.ConfigFiles = p.ConfigFiles
+			break
+		}
+	}
+
+	ch := make(chan tea.Msg, 128)
+	m.composeCh = ch
+	m.composeStream = []string{fmt.Sprintf("Running compose %s on %s...", action, projectName)}
+	ctx, service := m.ctx, m.service
+
+	go func() {
+		defer close(ch)
+		err := service.Compose(ctx, action, opts, func(line string) error {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case ch <- composeLineMsg{line: line}:
+				return nil
+			}
+		})
+		ch <- composeDoneMsg{action: action, err: err}
+	}()
+
+	return m.waitComposeCh()
+}
+
+func (m *Model) waitComposeCh() tea.Cmd {
+	ch := m.composeCh
+	if ch == nil {
+		return nil
+	}
+	return func() tea.Msg {
+		msg, ok := <-ch
+		if !ok {
+			return nil
+		}
+		return msg
+	}
+}
+
+func (m *Model) openCreateNetwork() tea.Cmd {
+	m.overlay = "create-network"
+	m.createNetDriver = "bridge"
+	m.input.Reset()
+	m.input.Placeholder = "network-name"
+	return m.input.Focus()
+}
+
+func (m *Model) confirmCreateNetwork() tea.Cmd {
+	name := strings.TrimSpace(m.input.Value())
+	if name == "" {
+		return m.notify("Network name cannot be empty.")
+	}
+	driver := m.createNetDriver
+	if driver == "" {
+		driver = "bridge"
+	}
+	ctx, service := m.ctx, m.service
+	m.input.Blur()
+	m.overlay = ""
+	return func() tea.Msg {
+		id, err := service.CreateNetwork(ctx, name, driver)
+		return networkCreatedMsg{id: id, err: err}
+	}
+}
+
+func (m *Model) openRemoveNetwork() tea.Cmd {
+	items := m.networks()
+	if len(items) == 0 {
+		return m.notify("No network selected.")
+	}
+	net := items[m.networkCursor]
+	if len(net.Containers) > 0 {
+		return m.notify(fmt.Sprintf("Network %s has active containers attached; disconnect them first.", net.Name))
+	}
+	m.removeNetwork = net.ID
+	m.overlay = "remove-network"
+	return nil
+}
+
+func (m *Model) confirmRemoveNetwork() tea.Cmd {
+	id := m.removeNetwork
+	ctx, service := m.ctx, m.service
+	m.overlay = ""
+	return func() tea.Msg {
+		err := service.RemoveNetwork(ctx, id)
+		return networkRemovedMsg{id: id, err: err}
+	}
 }
 
 func (m *Model) cleanupSummary() string {

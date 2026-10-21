@@ -159,6 +159,28 @@ func ContainerDetail(s style.Sheet, c engine.Container, inspect *engine.Containe
 		if inspect.ExitCode != 0 {
 			lines = append(lines, fmt.Sprintf("Exit code: %d", inspect.ExitCode))
 		}
+		if inspect.HealthCheck != nil {
+			lines = append(lines, "", s.Heading("HEALTHCHECK PROBE"))
+			probe := inspect.HealthCheck
+			lines = append(lines,
+				fmt.Sprintf("Status: %s   Exit code: %d   Failing streak: %d",
+					components.Pill(s, probe.Status),
+					probe.ExitCode,
+					probe.FailingStreak,
+				),
+			)
+			if !probe.End.IsZero() {
+				lines = append(lines, fmt.Sprintf("Last checked: %s ago", components.Age(probe.End, now)))
+			}
+			if probe.Output != "" {
+				cleanOut := strings.ReplaceAll(strings.TrimSpace(probe.Output), "\r", "")
+				outLines := strings.Split(cleanOut, "\n")
+				lines = append(lines, "Probe output:")
+				for _, ol := range outLines[:min(3, len(outLines))] {
+					lines = append(lines, "  "+s.Muted(style.Fit(style.Clean(ol), max(10, width-tokens.InsetX*2-tokens.PanelFrame-4), 1)))
+				}
+			}
+		}
 		lines = append(lines, "", s.Heading("NETWORK"))
 		lines = append(lines, "Mode: "+emptyDash(inspect.NetworkMode))
 		lines = append(lines, "Networks: "+emptyDash(strings.Join(inspect.Networks, ", ")))

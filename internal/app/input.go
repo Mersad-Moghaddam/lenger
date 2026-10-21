@@ -20,8 +20,10 @@ func actions() []action {
 		{"Dashboard", "1", ""},
 		{"Images", "2", "docker image ls"},
 		{"Containers", "3", "docker ps -a"},
+		{"Projects", "4", "docker compose ps"},
 		{"Volumes", "5", "docker volume ls"},
-		{"System disk usage", "7", "docker system df"},
+		{"Networks", "6", "docker network ls"},
+		{"System info", "7", "docker system df; docker info"},
 		{"Pull image", "p", "docker pull <reference>"},
 		{"Run from image", "run-image", "docker run -d <image>"},
 		{"Start container", "x", "docker start <container>"},
@@ -31,6 +33,10 @@ func actions() []action {
 		{"Exec shell", "e", "docker exec -it <container> sh"},
 		{"Inspect", "i", "docker inspect <resource>"},
 		{"Remove", "d", "docker rm <container> / docker image rm <image>"},
+		{"Compose Up", "u", "docker compose up -d"},
+		{"Compose Down", "compose-down", "docker compose down"},
+		{"Compose Restart", "compose-restart", "docker compose restart"},
+		{"Create Network", "create-net", "docker network create"},
 		{"Smart cleanup", "cleanup", "docker system df"},
 		{"Filter list", "/", "filter current resources"},
 		{"Refresh resources", "R", "docker ps -a; docker image ls; docker volume ls"},
@@ -45,6 +51,12 @@ func (m *Model) paletteActions() []action {
 	}
 	for _, container := range m.containers() {
 		all = append(all, action{"Container: " + container.Name, "container:" + container.ID, "docker inspect " + container.ID})
+	}
+	for _, project := range m.projects() {
+		all = append(all, action{"Project: " + project.Name, "project:" + project.Name, "docker compose -p " + project.Name + " ps"})
+	}
+	for _, network := range m.networks() {
+		all = append(all, action{"Network: " + network.Name, "network:" + network.ID, "docker network inspect " + network.ID})
 	}
 	if m.input.Value() == "" {
 		return all
@@ -132,12 +144,34 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	}
+	if strings.HasPrefix(k, "project:") {
+		name := strings.TrimPrefix(k, "project:")
+		m.tab = 3
+		for n, p := range m.projects() {
+			if p.Name == name {
+				m.projectCursor = n
+				return nil
+			}
+		}
+		return nil
+	}
+	if strings.HasPrefix(k, "network:") {
+		id := strings.TrimPrefix(k, "network:")
+		m.tab = 5
+		for n, net := range m.networks() {
+			if net.ID == id || net.Name == id {
+				m.networkCursor = n
+				return nil
+			}
+		}
+		return nil
+	}
 	if number, err := strconv.Atoi(k); err == nil && number >= 1 && number <= 7 {
 		m.tab = number - 1
 		m.detail = false
 		m.containerDetail = false
 		if m.tab == 6 {
-			return m.loadUsage()
+			return tea.Batch(m.loadUsage(), m.loadDaemonInfo())
 		}
 		if m.tab == 2 {
 			return m.loadStats()
@@ -171,7 +205,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	case "R":
 		cmds := []tea.Cmd{m.refresh()}
 		if m.tab == 6 {
-			cmds = append(cmds, m.loadUsage())
+			cmds = append(cmds, m.loadUsage(), m.loadDaemonInfo())
 		}
 		return tea.Batch(cmds...)
 	case "D":
@@ -180,10 +214,10 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		if m.tab == 0 {
 			m.tab = 1
 		}
-		if m.tab == 1 || m.tab == 2 || m.tab == 4 {
+		if m.tab >= 1 && m.tab <= 5 {
 			return m.openInput("filter")
 		}
-		return m.notify("Filtering is available on Images, Containers, and Volumes.")
+		return m.notify("Filtering is available on Images, Containers, Projects, Volumes, and Networks.")
 	case "o":
 		if m.tab == 1 {
 			m.sortMode = (m.sortMode + 1) % 3
@@ -225,12 +259,19 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 				return m.inspectContainer()
 			}
 		}
+	case "u":
+		if m.tab == 3 {
+			return m.openComposeAction(engine.ComposeUp)
+		}
 	case "r":
 		if m.tab == 1 {
 			return m.openRun()
 		}
 		if m.tab == 2 {
 			return m.triggerContainerAction(engine.ActionRestart, false)
+		}
+		if m.tab == 3 {
+			return m.openComposeAction(engine.ComposeRestart)
 		}
 	case "x":
 		if m.tab == 2 {
@@ -253,8 +294,14 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		if m.tab == 2 {
 			return m.triggerContainerAction(engine.ActionRemove, true)
 		}
+		if m.tab == 3 {
+			return m.openComposeAction(engine.ComposeDown)
+		}
 		if m.tab == 4 {
 			return m.openRemoveVolume()
+		}
+		if m.tab == 5 {
+			return m.openRemoveNetwork()
 		}
 	case "l":
 		if m.tab == 2 {
@@ -269,6 +316,9 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			return m.openExec()
 		}
 	case "c":
+		if m.tab == 5 {
+			return m.openCreateNetwork()
+		}
 		return m.openCleanup()
 	}
 	return nil
@@ -300,8 +350,12 @@ func (m *Model) moveCursor(key string, delta int) {
 		if (key == "shift+down" || key == "shift+up") && len(items) > 0 {
 			m.selectedContain[items[m.containerCursor].ID] = true
 		}
+	case 3:
+		m.projectCursor = max(0, min(m.projectCursor+delta, len(m.projects())-1))
 	case 4:
 		m.volumeCursor = max(0, min(m.volumeCursor+delta, len(m.volumes())-1))
+	case 5:
+		m.networkCursor = max(0, min(m.networkCursor+delta, len(m.networks())-1))
 	}
 }
 
@@ -440,6 +494,41 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 			ids, action := m.actionIDs, m.actionName
 			m.closeOverlay()
 			return m.runContainerAction(action, ids)
+		}
+		if k == "n" || k == "q" {
+			m.closeOverlay()
+		}
+		return nil
+	case "compose-action":
+		if k == "y" || k == "enter" {
+			return m.confirmComposeAction()
+		}
+		if k == "v" && m.composeAction == engine.ComposeDown {
+			m.composeVolumes = !m.composeVolumes
+			return nil
+		}
+		if k == "n" || k == "q" {
+			m.closeOverlay()
+		}
+		return nil
+	case "create-network":
+		if k == "enter" {
+			return m.confirmCreateNetwork()
+		}
+		if k == "tab" {
+			if m.createNetDriver == "bridge" {
+				m.createNetDriver = "overlay"
+			} else {
+				m.createNetDriver = "bridge"
+			}
+			return nil
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
+	case "remove-network":
+		if k == "y" || k == "enter" {
+			return m.confirmRemoveNetwork()
 		}
 		if k == "n" || k == "q" {
 			m.closeOverlay()

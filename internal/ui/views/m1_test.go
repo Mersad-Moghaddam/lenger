@@ -74,8 +74,9 @@ func TestVolumeAndSystemViewsRenderMeasuredFields(t *testing.T) {
 		Used:        1_250_000_000,
 		Reclaimable: 810_000_000,
 	}
-	system := System(plainSheet(), usage, true, nil, 120, 30, false)
-	for _, want := range []string{"LOCAL STORAGE", "RECLAIMABLE SHARE", "build cache", "65%"} {
+	daemon := engine.DaemonInfo{ServerVersion: "27.3.1", Arch: "x86_64", OS: "Ubuntu 24.04.1 LTS", NCPU: 16, MemTotal: 34_359_738_368}
+	system := System(plainSheet(), usage, daemon, true, nil, 120, 30, false)
+	for _, want := range []string{"LOCAL STORAGE", "RECLAIMABLE SHARE", "build cache", "65%", "Docker Engine: 27.3.1"} {
 		if !strings.Contains(system, want) {
 			t.Fatalf("system view missing %q:\n%s", want, system)
 		}

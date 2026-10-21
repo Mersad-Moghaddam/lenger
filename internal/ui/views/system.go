@@ -1,9 +1,10 @@
 package views
 
 import (
-	"charm.land/lipgloss/v2"
 	"fmt"
 	"strings"
+
+	"charm.land/lipgloss/v2"
 
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/chart"
@@ -20,11 +21,10 @@ type usageRow struct {
 	showActive bool
 }
 
-// System shows measured disk usage and the cleanup entry point. It never
-// presents a fabricated capacity: Docker reports used and reclaimable bytes.
-func System(s style.Sheet, usage engine.SystemUsage, loaded bool, failure *engine.ClassifiedError, width, height int, fixture bool) string {
+// System shows measured disk usage and host/daemon information (SYS-03).
+func System(s style.Sheet, usage engine.SystemUsage, daemon engine.DaemonInfo, loaded bool, failure *engine.ClassifiedError, width, height int, fixture bool) string {
 	if !loaded {
-		body := "Reading disk usage from Docker…\n\nThe system tab does not invent capacity or telemetry."
+		body := "Reading disk usage and daemon telemetry from Docker…\n\nThe system tab does not invent capacity or telemetry."
 		if failure != nil {
 			body = failure.Message + "\n\n" + failure.Suggestion + "\n\nR retry"
 		}
@@ -77,19 +77,47 @@ func System(s style.Sheet, usage engine.SystemUsage, loaded bool, failure *engin
 	}
 	lines = append(lines, chart.Sounding(min(1, fraction), max(1, width-tokens.PanelFrame-tokens.InsetX*2), s.ASCII))
 	lines = append(lines, fmt.Sprintf("%.0f%% of used storage is currently reclaimable.", fraction*100))
-	body := strings.Join(lines, "\n")
+
 	if width < tokens.DetailWidth {
-		return s.Panel("SYSTEM · DISK USAGE", body, width, height, true)
+		if daemon.ServerVersion != "" {
+			lines = append(lines, "", s.Heading("DAEMON INFORMATION"),
+				fmt.Sprintf("Docker Engine: %s (%s)", style.Clean(daemon.ServerVersion), style.Clean(daemon.Arch)),
+				fmt.Sprintf("OS: %s", style.Clean(daemon.OS)),
+				fmt.Sprintf("CPUs: %d · Memory: %s", daemon.NCPU, components.Bytes(daemon.MemTotal)),
+			)
+		}
+		return s.Panel("SYSTEM · DISK USAGE", strings.Join(lines, "\n"), width, height, true)
 	}
+
 	left := width * 3 / 5
 	right := width - left - tokens.Gap
-	cleanup := s.Heading("SMART CLEANUP") + "\n\n" +
-		"Preview every candidate before anything is removed.\n\n" +
-		"dangling images\nunused images\nstopped containers\nunused volumes\nbuild cache\n\n" +
-		"Volumes require typing the word volumes because their data cannot be recovered.\n\n" +
-		"Press c to open the checklist.\n\n" +
-		s.Muted("No force flags. No volume removal without a separate confirmation.")
-	top := s.Panel("SYSTEM · DISK USAGE", body, left, height, true)
-	side := s.Panel("CLEANUP", cleanup, right, height, false)
+
+	var infoLines []string
+	infoLines = append(infoLines, s.Heading("DAEMON INFORMATION"))
+	if daemon.ServerVersion != "" {
+		infoLines = append(infoLines,
+			"Docker Engine: "+style.Clean(daemon.ServerVersion)+" (API "+style.Clean(daemon.APIVersion)+")",
+			"Host OS: "+style.Clean(daemon.OS)+" ("+style.Clean(daemon.Arch)+")",
+			"Kernel: "+style.Clean(daemon.KernelVersion),
+			"Storage Driver: "+style.Clean(daemon.Driver),
+			fmt.Sprintf("Cgroup: %s (v%s)", style.Clean(daemon.CgroupDriver), style.Clean(daemon.CgroupVersion)),
+			fmt.Sprintf("Hardware: %d CPUs · %s RAM", daemon.NCPU, components.Bytes(daemon.MemTotal)),
+			"Root Dir: "+style.Clean(daemon.RootDir),
+		)
+	} else {
+		infoLines = append(infoLines, "Daemon telemetry unavailable.")
+	}
+
+	infoLines = append(infoLines, "", s.Heading("SMART CLEANUP"),
+		"Preview candidates before deletion.",
+		"dangling images, unused volumes, containers",
+		"",
+		"Press c to open checklist.",
+		"",
+		s.Muted("Volumes require confirmation. No forced prunes."),
+	)
+
+	top := s.Panel("SYSTEM · DISK USAGE", strings.Join(lines, "\n"), left, height, true)
+	side := s.Panel("DAEMON & CLEANUP", strings.Join(infoLines, "\n"), right, height, false)
 	return style.Fit(lipgloss.JoinHorizontal(lipgloss.Top, top, strings.Repeat(" ", tokens.Gap), side), width, height)
 }

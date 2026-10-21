@@ -69,10 +69,26 @@ func (e *Engine) ListContainers(ctx context.Context) ([]engine.Container, error)
 			State: string(c.State), Status: c.Status, Health: health,
 			Created: time.Unix(c.Created, 0), Ports: ports, Mounts: mounts,
 			Project: c.Labels["com.docker.compose.project"], Service: c.Labels["com.docker.compose.service"],
-			Labels: c.Labels,
+			ProjectDir:         c.Labels["com.docker.compose.project.working_dir"],
+			ProjectConfigFiles: splitCommaOrEmpty(c.Labels["com.docker.compose.project.config_files"]),
+			Labels:             c.Labels,
 		})
 	}
 	return items, nil
+}
+
+func splitCommaOrEmpty(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	res := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			res = append(res, trimmed)
+		}
+	}
+	return res
 }
 
 // InspectImage joins config and history for the image details pane.

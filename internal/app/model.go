@@ -87,6 +87,26 @@ type themeMsg tokens.Palette
 type pollMsg struct{}
 type toastMsg uint64
 
+type daemonInfoMsg struct {
+	data engine.DaemonInfo
+	err  error
+}
+type composeLineMsg struct {
+	line string
+}
+type composeDoneMsg struct {
+	action engine.ComposeAction
+	err    error
+}
+type networkCreatedMsg struct {
+	id  string
+	err error
+}
+type networkRemovedMsg struct {
+	id  string
+	err error
+}
+
 // Model contains session-local state; pointer ownership stays on the model thread.
 type Model struct {
 	// Dependencies and lifetime are fixed at construction.
@@ -130,6 +150,8 @@ type Model struct {
 	cursor          int
 	containerCursor int
 	volumeCursor    int
+	projectCursor   int
+	networkCursor   int
 	sortMode        int
 	paletteCursor   int
 	selected        map[string]bool
@@ -137,6 +159,8 @@ type Model struct {
 	filter          string
 	containerFilter string
 	volumeFilter    string
+	projectFilter   string
+	networkFilter   string
 	overlay         string
 	toast           string
 	toastID         uint64
@@ -152,6 +176,23 @@ type Model struct {
 	completedJobs   map[uint64]bool
 	motion          anim.Spring
 	clock           time.Time
+
+	// Host daemon information (SYS-03)
+	daemonInfo    engine.DaemonInfo
+	daemonLoaded  bool
+	daemonLoading bool
+
+	// Docker compose state and log stream (PRJ-01..PRJ-05)
+	composeStream  []string
+	composeAction  engine.ComposeAction
+	composeProject string
+	composeVolumes bool
+	composeCh      chan tea.Msg
+
+	// Network creation & removal state (NET-01)
+	createNetName   string
+	createNetDriver string
+	removeNetwork   string
 
 	// Container logs are a capped ring owned by the model thread.
 	logs           []engine.LogEntry
@@ -226,7 +267,7 @@ func (m *Model) SetFixture(value bool) { m.fixture = value }
 
 // Init starts independent resource, event and theme commands outside Update.
 func (m *Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{m.refresh(), m.startEvents(), m.waitEvent(), m.waitJobs(), m.poll()}
+	cmds := []tea.Cmd{m.refresh(), m.startEvents(), m.waitEvent(), m.waitJobs(), m.poll(), m.loadDaemonInfo()}
 	if m.config.UI.Theme == "omarchy" {
 		cmds = append(cmds, m.startTheme(), m.waitTheme())
 	}
@@ -270,6 +311,40 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.loadStats()
 		}
 		return m, nil
+	case daemonInfoMsg:
+		m.daemonLoading = false
+		if msg.err == nil {
+			m.daemonInfo = msg.data
+			m.daemonLoaded = true
+		}
+		return m, nil
+	case composeLineMsg:
+		m.composeStream = append(m.composeStream, msg.line)
+		if len(m.composeStream) > 200 {
+			m.composeStream = m.composeStream[len(m.composeStream)-200:]
+		}
+		return m, m.waitComposeCh()
+	case composeDoneMsg:
+		text := fmt.Sprintf("Compose %s completed.", msg.action)
+		if msg.err != nil {
+			text = fmt.Sprintf("Compose %s failed: %s", msg.action, engine.Classify(msg.err).Message)
+		}
+		m.closeOverlay()
+		return m, tea.Batch(m.notify(text), m.refresh())
+	case networkCreatedMsg:
+		text := "Network created."
+		if msg.err != nil {
+			text = engine.Classify(msg.err).Message
+		}
+		m.closeOverlay()
+		return m, tea.Batch(m.notify(text), m.refresh())
+	case networkRemovedMsg:
+		text := "Network removed."
+		if msg.err != nil {
+			text = engine.Classify(msg.err).Message
+		}
+		m.closeOverlay()
+		return m, tea.Batch(m.notify(text), m.refresh())
 	case containerInspectMsg:
 		if msg.err != nil {
 			return m, m.notify(engine.Classify(msg.err).Message)
@@ -560,6 +635,8 @@ func (m *Model) clamp() {
 	m.cursor = max(0, min(m.cursor, len(m.items())-1))
 	m.containerCursor = max(0, min(m.containerCursor, len(m.containers())-1))
 	m.volumeCursor = max(0, min(m.volumeCursor, len(m.volumes())-1))
+	m.projectCursor = max(0, min(m.projectCursor, len(m.projects())-1))
+	m.networkCursor = max(0, min(m.networkCursor, len(m.networks())-1))
 	m.cleanupCursor = max(0, min(m.cleanupCursor, len(services.CleanupKinds())-1))
 }
 
@@ -570,6 +647,32 @@ func (m *Model) containers() []engine.Container {
 		haystack := strings.ToLower(strings.Join([]string{c.Name, c.Image, c.State, c.Status, c.Project, c.Service, c.ID}, " "))
 		if strings.Contains(haystack, query) {
 			items = append(items, c)
+		}
+	}
+	sort.SliceStable(items, func(a, b int) bool { return items[a].Name < items[b].Name })
+	return items
+}
+
+func (m *Model) projects() []engine.ComposeProject {
+	query := strings.ToLower(m.projectFilter)
+	items := make([]engine.ComposeProject, 0, len(m.store.Projects))
+	for _, p := range m.store.Projects {
+		haystack := strings.ToLower(p.Name + " " + p.Status + " " + strings.Join(p.Services, " "))
+		if strings.Contains(haystack, query) {
+			items = append(items, p)
+		}
+	}
+	sort.SliceStable(items, func(a, b int) bool { return items[a].Name < items[b].Name })
+	return items
+}
+
+func (m *Model) networks() []engine.Network {
+	query := strings.ToLower(m.networkFilter)
+	items := make([]engine.Network, 0, len(m.store.Networks))
+	for _, n := range m.store.Networks {
+		haystack := strings.ToLower(n.Name + " " + n.Driver + " " + n.Scope + " " + n.ID)
+		if strings.Contains(haystack, query) {
+			items = append(items, n)
 		}
 	}
 	sort.SliceStable(items, func(a, b int) bool { return items[a].Name < items[b].Name })
@@ -593,8 +696,12 @@ func (m *Model) activeFilter() string {
 	switch m.tab {
 	case 2:
 		return m.containerFilter
+	case 3:
+		return m.projectFilter
 	case 4:
 		return m.volumeFilter
+	case 5:
+		return m.networkFilter
 	default:
 		return m.filter
 	}
@@ -605,9 +712,15 @@ func (m *Model) setActiveFilter(value string) {
 	case 2:
 		m.containerFilter = value
 		m.containerCursor = 0
+	case 3:
+		m.projectFilter = value
+		m.projectCursor = 0
 	case 4:
 		m.volumeFilter = value
 		m.volumeCursor = 0
+	case 5:
+		m.networkFilter = value
+		m.networkCursor = 0
 	default:
 		m.filter = value
 		m.cursor = 0
@@ -658,6 +771,8 @@ func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspectio
 	}
 	m.usage = galleryUsage(batch)
 	m.usageLoaded = true
+	m.daemonInfo = batch.Daemon
+	m.daemonLoaded = true
 	m.seedGalleryStats(batch)
 	if len(batch.Containers) > 0 {
 		if data, err := m.service.InspectContainer(m.ctx, batch.Containers[0].ID); err == nil {
@@ -665,6 +780,20 @@ func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspectio
 		}
 	}
 	switch overlay {
+	case "compose-action":
+		if len(m.store.Projects) > 0 {
+			m.composeProject = m.store.Projects[0].Name
+			m.composeAction = engine.ComposeDown
+			m.composeVolumes = true
+		}
+	case "create-network":
+		m.createNetName = "custom-bridge"
+		m.createNetDriver = "bridge"
+		m.input.SetValue("custom-bridge")
+	case "remove-network":
+		if len(batch.Networks) > 0 {
+			m.removeNetwork = batch.Networks[0].ID
+		}
 	case "pull":
 		m.jobID = 1
 		m.jobList = []jobs.Job{{ID: 1, Target: "redis:7.4", State: "running", Current: 37_200_000, Total: 60_000_000, Speed: 12_400_000, ETA: 9 * time.Second, Layers: []engine.Progress{{ID: "a3f1c9e2b7d4", Status: "Pull complete", Current: 20_000_000, Total: 20_000_000}, {ID: "7c0d8e5a1f92", Status: "Downloading", Current: 17_200_000, Total: 40_000_000}}}}

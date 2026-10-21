@@ -73,13 +73,16 @@ func (m *Model) Render() string {
 			}
 		}
 		body = views.Containers(s, items, m.containerCursor, m.selectedContain, m.containerFilter, inspect, m.containerDetail, m.containerRaw, m.stats, m.statCPU, m.statHistory, w, height, m.clock)
+	case m.tab == 3:
+		body = views.Projects(s, m.projects(), m.projectCursor, m.projectFilter, m.composeStream, w, height, m.clock)
 	case m.tab == 4:
 		body = views.Volumes(s, m.volumes(), m.volumeCursor, m.volumeFilter, w, height, m.clock)
+	case m.tab == 5:
+		body = views.Networks(s, m.networks(), m.networkCursor, m.networkFilter, w, height, m.clock)
 	case m.tab == 6:
-		body = views.System(s, m.usage, m.usageLoaded, m.usageErr, w, height, m.fixture)
+		body = views.System(s, m.usage, m.daemonInfo, m.usageLoaded, m.usageErr, w, height, m.fixture)
 	default:
-		requirements := []string{"", "", "", "PRJ-01–PRJ-05 (M2)", "", "NET-01 (M2)", ""}
-		body = views.Stub(s, components.TabNames()[m.tab], requirements[m.tab], w, height)
+		body = views.Dashboard(s, m.store, m.eventHistory, w, height, m.fixture)
 	}
 	footer := "? help   : palette   c cleanup   p pull   / filter   J jobs   q quit"
 	switch m.tab {
@@ -87,8 +90,12 @@ func (m *Model) Render() string {
 		footer = "p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup"
 	case 2:
 		footer = "x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup"
+	case 3:
+		footer = "u up  d down  r restart  l stream  / filter  c cleanup  q quit"
 	case 4:
 		footer = "d remove unused  / filter  c cleanup  R refresh"
+	case 5:
+		footer = "c create  d remove  / filter  R refresh  q quit"
 	case 6:
 		footer = "c cleanup  R refresh  ? help  q quit"
 	}
@@ -123,12 +130,22 @@ func (m *Model) overlayContent() (string, string) {
 		switch m.tab {
 		case 2:
 			title, scope = "Filter containers", "name, image, state, project, or ID"
+		case 3:
+			title, scope = "Filter projects", "project name, status, or service"
 		case 4:
 			title, scope = "Filter volumes", "name, driver, or mountpoint"
+		case 5:
+			title, scope = "Filter networks", "name, driver, scope, or ID"
 		}
 		return title, m.input.View() + "\n\nMatches " + scope + ".\nenter apply   esc back"
 	case "run":
 		return "Run image", m.runOverlay()
+	case "compose-action":
+		return "Compose Project Action", m.composeActionOverlay()
+	case "create-network":
+		return "Create Docker Network", m.createNetworkOverlay()
+	case "remove-network":
+		return "Confirm Network Removal", m.removeNetworkOverlay()
 	case "container-action":
 		return "Confirm container action", m.containerActionOverlay()
 	case "logs":
