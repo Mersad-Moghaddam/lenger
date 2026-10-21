@@ -24,8 +24,12 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 		return engine.ContainerInspection{}, fmt.Errorf("container not found")
 	}
 	c := e.containers[n]
+	now := time.Now().UTC()
+	memory := uint64(1_000_000_000)
+	diagnostics := engine.DiagnosticEvidence{ConfiguredMemory: &memory, DaemonErrorKnown: true}
 	out := engine.ContainerInspection{
-		ID: c.ID, Name: c.Name, Image: c.Image, ImageID: c.ImageID,
+		InspectedAt: now,
+		ID:          c.ID, Name: c.Name, Image: c.Image, ImageID: c.ImageID,
 		Platform: "linux/amd64", State: c.State, Status: c.Status, Health: c.Health,
 		Created: c.Created, StartedAt: c.Created, Restart: "unless-stopped",
 		NetworkMode: "bridge", Networks: []string{"storefront_default"},
@@ -42,19 +46,26 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 	}
 	if c.Health != "" {
 		out.HealthCheck = &engine.HealthProbe{
-			Status:        c.Health,
-			FailingStreak: 0,
-			Start:         time.Now().UTC().Add(-15 * time.Second),
-			End:           time.Now().UTC().Add(-14 * time.Second),
-			ExitCode:      0,
-			Output:        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n{\"status\":\"pass\",\"uptime\":10800}",
+			ExecutionObserved: true,
+			Status:            c.Health,
+			FailingStreak:     0,
+			Start:             now.Add(-15 * time.Second),
+			End:               now.Add(-14 * time.Second),
+			ExitCode:          0,
+			Output:            "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n{\"status\":\"pass\",\"uptime\":10800}",
 		}
+		diagnostics.HealthConfig = &engine.HealthCheckConfig{Command: []string{"CMD", "curl", "--fail", "http://localhost/health"}, Interval: 30 * time.Second, Timeout: 5 * time.Second, StartPeriod: 10 * time.Second, Retries: 3}
+		diagnostics.HealthHistoryKnown = true
+		diagnostics.ProbeExecutionObserved = true
+		diagnostics.HealthHistory = []engine.HealthProbe{*out.HealthCheck}
+		diagnostics.HealthHistory[0].Status = ""
+		diagnostics.HealthHistory[0].FailingStreak = 0
 	}
 	if c.State == "exited" {
 		out.FinishedAt = c.Created.Add(time.Hour)
 		out.StartedAt = time.Time{}
 	}
-	return out, nil
+	return out.WithDiagnosticEvidence(diagnostics), nil
 }
 
 // ContainerStats returns a deterministic sample that changes with wall time so

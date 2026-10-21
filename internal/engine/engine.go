@@ -60,13 +60,18 @@ type Mount struct {
 	RW                                    bool
 }
 
-// HealthProbe represents the latest container healthcheck execution status and diagnostics (CTR-07).
+// HealthProbe holds daemon execution facts (CTR-07), not inferred health transitions.
+// Status and FailingStreak describe the current aggregate ONLY on the compatibility
+// ContainerInspection.HealthCheck. In DiagnosticEvidence.HealthHistory these fields
+// are always zero: daemon logs do not record historical aggregate health states.
 type HealthProbe struct {
-	Status        string
-	FailingStreak int
-	Start, End    time.Time
-	ExitCode      int
-	Output        string
+	// ExecutionObserved requires daemon execution timestamps, not a default exit code.
+	ExecutionObserved bool
+	Status            string
+	FailingStreak     int
+	Start, End        time.Time
+	ExitCode          int
+	Output            string `json:"-"`
 }
 
 // ContainerInspection is structured, SDK-independent container metadata.
@@ -76,11 +81,16 @@ type ContainerInspection struct {
 	Created, StartedAt, FinishedAt              time.Time
 	ExitCode, RestartCount                      int
 	OOMKilled, TTY                              bool
-	Env, Entrypoint, Command, Ports             []string
+	Env                                         []string
+	Entrypoint, Command                         []string `json:"-"`
+	Ports                                       []string
 	Networks                                    []string
 	Mounts                                      []Mount
 	Labels                                      map[string]string
 	HealthCheck                                 *HealthProbe
+	// InspectedAt is successful inspect fetch completion, not container start.
+	InspectedAt time.Time
+	diagnostics DiagnosticEvidence
 }
 
 // RunSpec contains the options exposed by the run-from-image wizard.

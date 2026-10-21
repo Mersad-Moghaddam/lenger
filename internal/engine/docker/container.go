@@ -27,11 +27,13 @@ import (
 func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.ContainerInspection, error) {
 	result, err := e.client.ContainerInspect(ctx, id, client.ContainerInspectOptions{})
 	if err != nil {
-		return engine.ContainerInspection{}, fmt.Errorf("inspect container: %w", err)
+		return engine.ContainerInspection{}, newInspectionError(err)
 	}
 	c := result.Container
+	diagnostics := engine.DiagnosticEvidence{}
 	out := engine.ContainerInspection{
-		ID: c.ID, Name: strings.TrimPrefix(c.Name, "/"), ImageID: c.Image,
+		InspectedAt: time.Now().UTC(),
+		ID:          c.ID, Name: strings.TrimPrefix(c.Name, "/"), ImageID: c.Image,
 		Platform: c.Platform, Created: parseTime(c.Created),
 		RestartCount: c.RestartCount, Mounts: mountList(c.Mounts),
 	}
@@ -42,11 +44,16 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 		out.Command = slices.Clone(c.Config.Cmd)
 		out.Labels = maps.Clone(c.Config.Labels)
 		out.TTY = c.Config.Tty
+		if h := c.Config.Healthcheck; h != nil {
+			diagnostics.HealthConfig = &engine.HealthCheckConfig{Command: slices.Clone(h.Test), Interval: h.Interval, Timeout: h.Timeout, StartPeriod: h.StartPeriod, Retries: h.Retries}
+		}
 		for port := range c.Config.ExposedPorts {
 			out.Ports = append(out.Ports, port.String())
 		}
 	}
 	if c.State != nil {
+		diagnostics.DaemonErrorKnown = true
+		diagnostics.DaemonError = c.State.Error
 		out.State = string(c.State.Status)
 		out.Status = string(c.State.Status)
 		out.ExitCode = c.State.ExitCode
@@ -54,24 +61,44 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 		out.StartedAt = parseTime(c.State.StartedAt)
 		out.FinishedAt = parseTime(c.State.FinishedAt)
 		if c.State.Health != nil {
+			diagnostics.HealthHistoryKnown = true
 			out.Health = string(c.State.Health.Status)
 			probe := &engine.HealthProbe{
 				Status:        string(c.State.Health.Status),
 				FailingStreak: c.State.Health.FailingStreak,
 			}
-			if len(c.State.Health.Log) > 0 {
-				last := c.State.Health.Log[len(c.State.Health.Log)-1]
-				if last != nil {
-					probe.Start = last.Start
-					probe.End = last.End
-					probe.ExitCode = last.ExitCode
-					probe.Output = last.Output
+			logs := c.State.Health.Log
+			// Bound available executions, not nullable daemon log slots.
+			first, available := len(logs), 0
+			for first > 0 && available < engine.MaxHealthHistory {
+				first--
+				if logs[first] != nil {
+					available++
+				}
+			}
+			for _, entry := range logs[first:] {
+				if entry == nil {
+					continue
+				}
+				p := engine.HealthProbe{Start: entry.Start, End: entry.End, ExitCode: entry.ExitCode, Output: entry.Output}
+				p.ExecutionObserved = !p.Start.IsZero() || !p.End.IsZero()
+				diagnostics.HealthHistory = append(diagnostics.HealthHistory, p)
+				*probe = p
+				probe.Status = string(c.State.Health.Status)
+				probe.FailingStreak = c.State.Health.FailingStreak
+				// An exit code of zero alone is not execution evidence.
+				if p.ExecutionObserved {
+					diagnostics.ProbeExecutionObserved = true
 				}
 			}
 			out.HealthCheck = probe
 		}
 	}
 	if c.HostConfig != nil {
+		if c.HostConfig.Memory >= 0 {
+			memory := uint64(c.HostConfig.Memory)
+			diagnostics.ConfiguredMemory = &memory
+		}
 		out.NetworkMode = string(c.HostConfig.NetworkMode)
 		out.Restart = string(c.HostConfig.RestartPolicy.Name)
 	}
@@ -90,7 +117,7 @@ func (e *Engine) InspectContainer(ctx context.Context, id string) (engine.Contai
 	}
 	slices.Sort(out.Ports)
 	slices.Sort(out.Networks)
-	return out, nil
+	return out.WithDiagnosticEvidence(diagnostics), nil
 }
 
 // ContainerStats returns one immediate sample. The caller computes CPU percent
