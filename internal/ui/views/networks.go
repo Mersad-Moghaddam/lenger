@@ -33,7 +33,7 @@ func Networks(s style.Sheet, items []engine.Network, cursor int, filter string, 
 }
 
 // NetworkList renders the compact, sorted table of Docker networks.
-func NetworkList(s style.Sheet, items []engine.Network, cursor int, filter string, width, height int, now time.Time) string {
+func NetworkList(s style.Sheet, items []engine.Network, cursor int, filter string, width, height int, _ time.Time) string {
 	lines := []string{s.Muted("filter " + emptyDash(filter))}
 	capacity := max(1, height-tokens.PanelFrame-tokens.InsetY*2-1)
 	start := max(0, cursor-capacity+1)

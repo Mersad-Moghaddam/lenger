@@ -77,11 +77,11 @@ func helperAuth(ctx context.Context, helper, server string) (registry.AuthConfig
 		if strings.TrimSpace(string(output)) == "credentials not found in native keychain" {
 			return auth, nil
 		}
-		return auth, fmt.Errorf("Docker credential helper failed; check docker login")
+		return auth, fmt.Errorf("docker credential helper failed; check docker login")
 	}
 	var secret struct{ Username, Secret string }
 	if err := json.Unmarshal(output, &secret); err != nil {
-		return auth, fmt.Errorf("invalid Docker credential helper response")
+		return auth, fmt.Errorf("invalid docker credential helper response")
 	}
 	if secret.Username == "<token>" {
 		auth.IdentityToken = secret.Secret

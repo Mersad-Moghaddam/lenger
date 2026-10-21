@@ -97,7 +97,7 @@ func (e *Engine) ContainerStats(ctx context.Context, id string) (engine.Containe
 	if err != nil {
 		return engine.ContainerStats{}, fmt.Errorf("read container stats: %w", err)
 	}
-	defer result.Body.Close()
+	defer func() { _ = result.Body.Close() }()
 	var response container.StatsResponse
 	if err := json.NewDecoder(result.Body).Decode(&response); err != nil {
 		return engine.ContainerStats{}, fmt.Errorf("decode container stats: %w", err)

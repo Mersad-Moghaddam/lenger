@@ -13,6 +13,7 @@ import (
 // CleanupKind is one category in the smart-cleanup checklist.
 type CleanupKind string
 
+// Smart cleanup targets supported by Lenger.
 const (
 	CleanupDanglingImages    CleanupKind = "dangling-images"
 	CleanupUnusedImages      CleanupKind = "unused-images"

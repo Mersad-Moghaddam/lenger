@@ -140,6 +140,7 @@ type SystemUsage struct {
 // ContainerAction is a safe, non-forced lifecycle operation.
 type ContainerAction string
 
+// Container lifecycle actions supported by the engine layer.
 const (
 	ActionStart   ContainerAction = "start"
 	ActionStop    ContainerAction = "stop"
@@ -231,6 +232,7 @@ type DaemonInfo struct {
 // ComposeAction is an operation performed on a Compose project.
 type ComposeAction string
 
+// Compose lifecycle actions supported by the engine layer.
 const (
 	ComposeUp      ComposeAction = "up"
 	ComposeDown    ComposeAction = "down"

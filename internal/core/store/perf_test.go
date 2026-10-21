@@ -42,6 +42,9 @@ func TestStore5000ImagesScaleAndFilter(t *testing.T) {
 			matched = append(matched, img)
 		}
 	}
+	if len(matched) == 0 {
+		t.Fatalf("expected matches, got none")
+	}
 	elapsed := time.Since(start)
 
 	if elapsed > 10*time.Millisecond {

@@ -540,7 +540,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.logs) > 50_000 {
 			m.logs = m.logs[len(m.logs)-50_000:]
 		}
-		return m, waitLog(m.logCh, m.logsGen, m.ctx)
+		return m, waitLog(m.ctx, m.logCh, m.logsGen)
 	case logEndMsg:
 		if msg.gen != m.logsGen {
 			return m, nil

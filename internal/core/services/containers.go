@@ -269,7 +269,7 @@ func RunCommand(spec engine.RunSpec) string {
 
 func shellQuote(value string) string {
 	if value != "" && strings.IndexFunc(value, func(r rune) bool {
-		return !(unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune("_./:@%+=,-", r))
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && !strings.ContainsRune("_./:@%+=,-", r)
 	}) < 0 {
 		return value
 	}

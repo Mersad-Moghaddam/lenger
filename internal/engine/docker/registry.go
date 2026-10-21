@@ -31,7 +31,7 @@ func (e *Engine) SearchRegistry(ctx context.Context, query string) ([]engine.Reg
 			Description: r.Description,
 			Stars:       r.StarCount,
 			Official:    r.IsOfficial,
-			Automated:   r.IsAutomated,
+			Automated:   r.IsAutomated, //nolint:staticcheck // IsAutomated is preserved for engine contract compatibility
 		})
 	}
 	return out, nil
@@ -66,7 +66,7 @@ func listDockerHubTags(ctx context.Context, repoPath string) ([]engine.RemoteTag
 	if err != nil {
 		return nil, engine.Classify(fmt.Errorf("hub tag query: %w", err))
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, engine.Classify(fmt.Errorf("hub tag query failed with HTTP %d", resp.StatusCode))
@@ -115,7 +115,7 @@ func listOCITags(ctx context.Context, domain, path string) ([]engine.RemoteTag, 
 	if err != nil {
 		return nil, engine.Classify(fmt.Errorf("oci tag query: %w", err))
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, engine.Classify(fmt.Errorf("oci tag query returned HTTP %d", resp.StatusCode))

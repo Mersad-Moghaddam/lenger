@@ -35,7 +35,7 @@ func TestRemovalCancellationAfterReferenceCheckPreventsDeletion(t *testing.T) {
 	}
 }
 
-func (e *removalEngine) RemoveImage(ctx context.Context, id string) error {
+func (e *removalEngine) RemoveImage(ctx context.Context, _ string) error {
 	e.removed = true
 	if _, ok := ctx.Deadline(); !ok {
 		return errors.New("missing operation deadline")

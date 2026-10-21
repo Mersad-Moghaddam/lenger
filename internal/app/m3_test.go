@@ -53,9 +53,7 @@ func TestRegistrySearchOverlayAndNavigation(t *testing.T) {
 
 	// Press Esc to return to search results
 	_, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
-	if !m.registryBrowsingTags && m.overlay == "registry-search" {
-		// stepped back to search
-	} else {
+	if m.registryBrowsingTags || m.overlay != "registry-search" {
 		t.Fatalf("expected back to search results, got browsingTags=%v overlay=%s", m.registryBrowsingTags, m.overlay)
 	}
 

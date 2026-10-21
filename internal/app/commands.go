@@ -99,7 +99,7 @@ func (m *Model) waitTheme() tea.Cmd {
 	}
 }
 
-func waitLog(ch chan tea.Msg, gen uint64, ctx context.Context) tea.Cmd {
+func waitLog(ctx context.Context, ch chan tea.Msg, gen uint64) tea.Cmd {
 	return func() tea.Msg {
 		select {
 		case <-ctx.Done():

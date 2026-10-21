@@ -113,7 +113,7 @@ func (e *Engine) TagImage(ctx context.Context, sourceID, targetRef string) error
 }
 
 // PushImage simulates remote registry push with streamed progress (IMG-08).
-func (e *Engine) PushImage(ctx context.Context, ref string, emit func(engine.Progress) error) error {
+func (e *Engine) PushImage(ctx context.Context, _ string, emit func(engine.Progress) error) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}

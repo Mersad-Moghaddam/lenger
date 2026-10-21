@@ -190,7 +190,7 @@ func TestRegistryServicesWithFakeEngine(t *testing.T) {
 
 	// Push image
 	var progressCount int
-	err = svc.PushImage(ctx, "custom-tag:v1", func(p engine.Progress) error {
+	err = svc.PushImage(ctx, "custom-tag:v1", func(_ engine.Progress) error {
 		progressCount++
 		return nil
 	})
@@ -203,7 +203,7 @@ func TestRegistryServicesWithFakeEngine(t *testing.T) {
 
 	// Save and Load image
 	tmpFile := filepath.Join(os.TempDir(), "test-save-load.tar")
-	defer os.Remove(tmpFile)
+	defer func() { _ = os.Remove(tmpFile) }()
 
 	if err := svc.SaveImage(ctx, sourceImg.ID, tmpFile); err != nil {
 		t.Fatalf("save failed: %v", err)

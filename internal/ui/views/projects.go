@@ -33,7 +33,7 @@ func Projects(s style.Sheet, items []engine.ComposeProject, cursor int, filter s
 }
 
 // ProjectList renders the responsive table of discovered Compose projects.
-func ProjectList(s style.Sheet, items []engine.ComposeProject, cursor int, filter string, width, height int, now time.Time) string {
+func ProjectList(s style.Sheet, items []engine.ComposeProject, cursor int, filter string, width, height int, _ time.Time) string {
 	lines := []string{s.Muted("filter " + emptyDash(filter))}
 	capacity := max(1, height-tokens.PanelFrame-tokens.InsetY*2-1)
 	start := max(0, cursor-capacity+1)
@@ -64,7 +64,7 @@ func ProjectList(s style.Sheet, items []engine.ComposeProject, cursor int, filte
 }
 
 // ProjectDetail renders the services, working directory, and live compose stream logs.
-func ProjectDetail(s style.Sheet, project engine.ComposeProject, streamOutput []string, width, height int, now time.Time) string {
+func ProjectDetail(s style.Sheet, project engine.ComposeProject, streamOutput []string, width, height int, _ time.Time) string {
 	var lines []string
 	lines = append(lines,
 		style.Clean(project.Name)+"  "+components.Pill(s, project.Status),

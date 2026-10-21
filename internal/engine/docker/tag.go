@@ -45,7 +45,7 @@ func (e *Engine) SaveImage(ctx context.Context, id, targetFile string) error {
 	if err != nil {
 		return fmt.Errorf("create export file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	if _, err := io.Copy(f, reader); err != nil {
 		return fmt.Errorf("write image tar: %w", err)
@@ -59,7 +59,7 @@ func (e *Engine) LoadImage(ctx context.Context, sourceFile string) error {
 	if err != nil {
 		return fmt.Errorf("open import file: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	res, err := e.client.ImageLoad(ctx, f)
 	if err != nil {

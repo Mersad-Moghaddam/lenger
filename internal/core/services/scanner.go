@@ -15,6 +15,7 @@ import (
 // ScannerName identifies the detected scanner tool.
 type ScannerName string
 
+// Supported vulnerability scanners.
 const (
 	ScannerTrivy ScannerName = "trivy"
 	ScannerGrype ScannerName = "grype"

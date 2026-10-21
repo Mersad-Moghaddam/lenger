@@ -78,7 +78,7 @@ func (e *Engine) Compose(ctx context.Context, action engine.ComposeAction, opts 
 
 	cmdErr := cmd.Wait()
 	_ = writer.Close()
-	_ = <-scanDone
+	<-scanDone
 
 	if cmdErr != nil {
 		return fmt.Errorf("compose %s failed: %w", action, cmdErr)

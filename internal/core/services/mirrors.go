@@ -106,7 +106,7 @@ func (s *Service) MirrorPull(ctx context.Context, ref string, mirrors []string, 
 		return pullErr
 	}
 
-	var lastErr error = pullErr
+	lastErr := pullErr
 	for _, mirror := range mirrors {
 		rewritten, err := RewriteMirrorReference(ref, mirror)
 		if err != nil {
@@ -125,9 +125,8 @@ func (s *Service) MirrorPull(ctx context.Context, ref string, mirrors []string, 
 			})
 			_ = s.engine.TagImage(ctx, rewritten, ref)
 			return nil
-		} else {
-			lastErr = err
 		}
+		lastErr = err
 	}
 	return fmt.Errorf("pull failed across direct registry and all %d mirrors: %w", len(mirrors), lastErr)
 }

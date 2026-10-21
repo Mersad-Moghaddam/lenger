@@ -415,9 +415,9 @@ func (m *Model) stopLogs() {
 	}
 }
 
-func (m *Model) streamLogs(follow, clear bool) tea.Cmd {
+func (m *Model) streamLogs(follow, clearLogs bool) tea.Cmd {
 	m.stopLogs()
-	if clear {
+	if clearLogs {
 		m.logs = nil
 	}
 	m.logsFollow = follow
@@ -445,7 +445,7 @@ func (m *Model) streamLogs(follow, clear bool) tea.Cmd {
 		}
 		return nil
 	}
-	return tea.Batch(worker, waitLog(ch, gen, ctx))
+	return tea.Batch(worker, waitLog(ctx, ch, gen))
 }
 
 func (m *Model) pauseLogs() tea.Cmd {
@@ -856,7 +856,7 @@ func (m *Model) openPushImage() tea.Cmd {
 func (m *Model) executePush(ref string) tea.Cmd {
 	ctx, service := m.ctx, m.service
 	return func() tea.Msg {
-		err := service.PushImage(ctx, ref, func(p engine.Progress) error {
+		err := service.PushImage(ctx, ref, func(_ engine.Progress) error {
 			return nil
 		})
 		return pushDoneMsg{ref: ref, err: err}

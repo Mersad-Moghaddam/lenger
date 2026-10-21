@@ -66,7 +66,7 @@ func Setup(apply bool) string {
 		if data, err := os.ReadFile(configFile); err == nil {
 			content := string(data)
 			if strings.Contains(content, "lenger") {
-				sb.WriteString(fmt.Sprintf("✓ Lenger is already configured in %s\n", configFile))
+				fmt.Fprintf(&sb, "✓ Lenger is already configured in %s\n", configFile)
 				return sb.String()
 			}
 			if strings.Contains(content, "$mainMod SHIFT, D") || strings.Contains(content, "SUPER + SHIFT + D") {
@@ -79,12 +79,12 @@ func Setup(apply bool) string {
 	if apply && configFile != "" {
 		f, err := os.OpenFile(configFile, os.O_APPEND|os.O_WRONLY, 0o644)
 		if err != nil {
-			sb.WriteString(fmt.Sprintf("✗ Failed to open %s: %v\n", configFile, err))
+			fmt.Fprintf(&sb, "✗ Failed to open %s: %v\n", configFile, err)
 			sb.WriteString("  Add the following line manually:\n\n")
 			sb.WriteString("  " + bindingLine + "\n")
 			return sb.String()
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 
 		comment := "#"
 		if isLua {
@@ -92,11 +92,11 @@ func Setup(apply bool) string {
 		}
 		addition := fmt.Sprintf("\n%s Lenger Docker TUI\n%s\n", comment, bindingLine)
 		if _, err := f.WriteString(addition); err != nil {
-			sb.WriteString(fmt.Sprintf("✗ Failed to write to %s: %v\n", configFile, err))
+			fmt.Fprintf(&sb, "✗ Failed to write to %s: %v\n", configFile, err)
 			return sb.String()
 		}
 
-		sb.WriteString(fmt.Sprintf("✓ Successfully added keybinding to %s:\n\n", configFile))
+		fmt.Fprintf(&sb, "✓ Successfully added keybinding to %s:\n\n", configFile)
 		sb.WriteString("  " + bindingLine + "\n\n")
 		sb.WriteString("Reload Hyprland config (Super+Shift+R or 'hyprctl reload') to activate.\n")
 		return sb.String()

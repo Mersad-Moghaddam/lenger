@@ -10,7 +10,7 @@ import (
 )
 
 // ReverseDependencies renders the "Why is this image here?" sounding (IMG-11).
-func ReverseDependencies(s style.Sheet, image engine.Image, containers []engine.Container, projects []engine.ComposeProject, width int) string {
+func ReverseDependencies(s style.Sheet, image engine.Image, containers []engine.Container, _ []engine.ComposeProject, width int) string {
 	var depContainers []engine.Container
 	for _, c := range containers {
 		if c.ImageID == image.ID || c.Image == image.Name() || matchesRepoTag(image.RepoTags, c.Image) {
