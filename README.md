@@ -8,6 +8,11 @@ for Linux, with optional read-only Omarchy theme integration.
 > installation encountered a broken Go checksum-cache path. `go.sum`, transitive
 > dependency resolution and reviewed golden baselines remain outstanding.
 
+Public repository: **https://github.com/Mersad-Moghaddam/lenger**.
+Contributions are welcome; start with [CONTRIBUTING.md](CONTRIBUTING.md).
+For security concerns read [SECURITY.md](SECURITY.md). Release and package
+distribution gates are documented in [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md).
+
 ## Run
 
 Requires Go 1.27+, a terminal of at least 80×24 cells, and optionally a reachable

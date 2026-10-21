@@ -1,5 +1,38 @@
 # Decisions and implementation ledger
 
+## Review follow-up — 2026-10-21
+
+This section supersedes older coding-stage notes where they conflict.
+
+- User authorized a **public** GitHub source repository named `lenger` under
+  `Mersad-Moghaddam`. Module/import paths now use that actual owner.
+- Formatted all Go sources with the formatter in the existing Go container.
+  The local `go` executable is a Docker wrapper, not a native installation;
+  this explains why the previously reported GOROOT did not exist on the host.
+- Separated background command factories into `internal/app/commands.go` and
+  grouped model fields by ownership. Commands capture dependencies before
+  running asynchronously instead of reading mutable model fields.
+- Refreshes are single-flight with a pending-invalidation flag. Events received
+  during a fetch request a follow-up instead of being silently dropped.
+- Finished pull jobs are tracked by ID, independent of whether a running
+  snapshot was ever displayed. Coalesced/fast completion still refreshes images.
+- Inspection masks detached environment, label, layer, port and digest copies,
+  avoiding accidental mutation of adapter-owned metadata.
+- Replaced Docker CLI credential-store dependency with standard Docker config
+  reading and context-aware credential-helper execution (10-second timeout,
+  one-second process wait delay, helper-name validation). Credentials remain
+  transient. Removed the Docker CLI module dependency.
+- Small-screen modal clipping preserves a final action-hint line.
+- Added regression test sources for refresh coalescing, fast pull completion,
+  Docker auth decoding and unsafe helper-name rejection. They were **not run**.
+- CI is manual-only until executable verification and visual baselines are
+  authorized; pushing source does not implicitly start prohibited heavy checks.
+- Added contribution, security and distribution documentation. Public source is
+  not a stable release; no Marketplace listing, AUR package or binary is shipped.
+- Remaining limitations include dependency lock resolution, unexecuted tests,
+  event reconnection readiness/duplicate handling, metadata scrolling and motion
+  polish. No claim of release readiness or complete runtime reliability is made.
+
 ## 2026-10-21
 
 - Source of truth: `PRD.md`. Scope is M0 plus images/pull, not the full MVP.

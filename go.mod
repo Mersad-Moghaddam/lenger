@@ -1,4 +1,4 @@
-module github.com/OWNER/lenger
+module github.com/Mersad-Moghaddam/lenger
 
 go 1.27.0
 
@@ -11,7 +11,6 @@ require (
 	charm.land/log/v2 v2.0.1
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/harmonica v0.2.0
-	github.com/docker/cli v29.9.2+incompatible
 	github.com/distribution/reference v0.6.0
 	github.com/moby/moby/api v1.56.1
 	github.com/moby/moby/client v0.6.2
