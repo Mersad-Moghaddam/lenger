@@ -1,0 +1,14 @@
+version: 2
+project_name: lenger
+builds:
+  - main: ./cmd/lenger
+    binary: lenger
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64, arm64]
+archives:
+  - formats: [tar.gz]
+checksum:
+  name_template: checksums.txt
+release:
+  disable: true
