@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Con  2 Ima  3 Vol  4 Net                                                      
+=====                                                                           
+[Esc] Back                                                                      
+[Health & Diagnostics]                                                          
+Live Logs                                                                       
+Metrics                                                                         
+Env & Ports                                                                     
+Timeline                                                                        
+  1. Previous instance logs                                                     
+> 2. Restart container                                                          
+  3. Healthcheck command / evidence                                             
+[Docker Engine Inspect]                                                         
+State: running                                                                  
+Health: healthy                                                                 
+ExitCode: 0 · OOMKilled: false                                                  
+Probe exit code: 0                                                              
+Inspect timestamp: 2026-10-21T12:00:00Z                                         
+RestartCount: 0                                                                 
+Restart policy: unless-stopped                                                  
+Daemon error: none                                                              
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s s
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

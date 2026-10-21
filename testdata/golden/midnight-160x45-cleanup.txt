@@ -1,15 +1,15 @@
 @ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
 1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                   
 ============                                                                                                                                                    
-+--------------------------------------------------------------+  +--------------------------------------------------------------------------------------------+
-|  CONTAINERS  3                                               |  |  postgres-1                                                                                |
-|  filter —                                                    |  |  db1  + running                                                                            |
-|  > postgres-1            + running postgres:16               |  |  postgres:16                                                                               |
-|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tc  |  |                                                                                            |
-|    redis-1               - exited redis:7.4                  |  |  RESOURCES                                                                                 |
-|    cpu —  mem —  storefront · 6379/tcp                       |  |  CPU:   7.1%  +++*++**+##*++*++*                                                           |
-|    web-1                 + running nginx:1.27-alpine         |  |  Memory: 512.0 MB / 1.0 GB                                                                 |
-|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80  |  |  Network: rx 256.0 MB · tx 85.3 MB                                                         |
++--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                                                                                                               |
+|  filter —                                                                                                                                                    |
+|  > postgres-1               + running postgres:16                                                                                                            |
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · up 1d 0h                                                                                      |
+|    redis-1                  - exited redis:7.4                                                                                                               |
+|    cpu —  mem —  storefront · 6379/tcp                                                                                                                       |
+|    web-1                    + running nginx:1.27-alpine                                                                                                      |
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp · up 3h 0m                                                                                   |
 |                                           +----------------------------------------------------------------------+                                           |
 |                                           |  Smart cleanup preview                                               |                                           |
 |                                           |  CLEANUP CHECKLIST                                                   |                                           |
@@ -31,15 +31,15 @@
 |                                           |                                                                      |                                           |
 |                                           |  space toggle  enter confirm  R reload  esc close                    |                                           |
 |                                           +----------------------------------------------------------------------+                                           |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-|                                                              |  |                                                                                            |
-+--------------------------------------------------------------+  +--------------------------------------------------------------------------------------------+
-x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup   v 0 jobs                                                        
+|                                                                                                                                                              |
+|                                                                                                                                                              |
+|                                                                                                                                                              |
+|                                                                                                                                                              |
+|                                                                                                                                                              |
+|                                                                                                                                                              |
+|                                                                                                                                                              |
+|                                                                                                                                                              |
++--------------------------------------------------------------------------------------------------------------------------------------------------------------+
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s stop/start  g group  / filter   v 0 jobs                                         
 Local daemon. No accounts. No telemetry.                                                                                                                        
                                                                                                                                                                 

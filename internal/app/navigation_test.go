@@ -188,7 +188,9 @@ func TestNavigationRoundTripPreservesContainerViewport(t *testing.T) {
 	}
 }
 
-func TestNavigationPaletteReturnRunsStatsWorker(t *testing.T) {
+// A palette navigation without an activated drawer must not sample the whole
+// Containers tab. Drawer worker startup/cancellation is covered by integration.
+func TestNavigationPaletteReturnDoesNotRunIdleStatsWorker(t *testing.T) {
 	for _, resource := range []string{"container", "project"} {
 		for _, found := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s/found=%v", resource, found), func(t *testing.T) {
@@ -223,14 +225,21 @@ func TestNavigationPaletteReturnRunsStatsWorker(t *testing.T) {
 						m.Update(msg)
 					}
 				}
-				run(cmd)
-				if statsResults != 1 || m.statsLoading {
-					t.Fatalf("stats results=%d, loading=%v; want one completed worker", statsResults, m.statsLoading)
+				// A found container starts a real streaming drawer. Do not execute
+				// its long-lived Batch synchronously in this unit test.
+				if resource == "container" && found {
+					if cmd == nil || !m.focus.DrawerOpen || m.drawerID != id {
+						t.Fatal("palette activation did not open selected drawer")
+					}
+					m.closeDrawer()
+					return
 				}
-				if next := m.loadStats(); next == nil {
-					t.Fatal("completed palette stats request suppressed subsequent sampling")
-				} else {
-					run(next)
+				run(cmd)
+				if statsResults != 0 || m.statsLoading {
+					t.Fatalf("stats results=%d, loading=%v; idle navigation must not poll", statsResults, m.statsLoading)
+				}
+				if next := m.loadStats(); next != nil {
+					t.Fatal("closed drawer scheduled stats")
 				}
 			})
 		}

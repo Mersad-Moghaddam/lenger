@@ -1,0 +1,60 @@
+@ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
+1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                                                           
+============                                                                                                                                                                                            
++-------------------------------------------------------------------+│[Health & Diagnostics] · Live Logs · Metrics · Env & Ports · Timeline                                                             
+|  CONTAINERS  3                                                    |   1. Previous instance logs                                                                                                       
+|  filter —                                                         | > 2. Restart container                                                                                                            
+|  > postgres-1              + running postgres:16                  |   3. Healthcheck command / evidence                                                                                               
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · u  | [Docker Engine Inspect]                                                                                                           
+|    redis-1                 - exited redis:7.4                     | State: running                                                                                                                    
+|    cpu —  mem —  storefront · 6379/tcp                            | Health: healthy                                                                                                                   
+|    web-1                   + running nginx:1.27-alpine            | ExitCode: 0 · OOMKilled: false                                                                                                    
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp   | Probe exit code: 0                                                                                                                
+|                                                                   | Inspect timestamp: 2026-10-21T12:00:00Z                                                                                           
+|                                                                   | RestartCount: 0                                                                                                                   
+|                                                                   | Restart policy: unless-stopped                                                                                                    
+|                                                                   | Daemon error: none                                                                                                                
+|                                                                   | Healthcheck command: withheld (may contain secrets)                                                                               
+|                                                                   | Healthcheck interval: 30s                                                                                                         
+|                                                                   | Healthcheck timeout: 5s                                                                                                           
+|                                                                   | Healthcheck start period: 10s                                                                                                     
+|                                                                   | Healthcheck retries: 3                                                                                                            
+|                                                                   | Healthcheck history: 1 records                                                                                                    
+|                                                                   | History probe completed: 2026-10-21T11:59:46Z                                                                                     
+|                                                                   | History probe exit code: 0                                                                                                        
+|                                                                   | History probe duration: 1s                                                                                                        
+|                                                                   | History probe output: withheld (may contain secrets)                                                                              
+|                                                                   | Latest probe status: healthy                                                                                                      
+|                                                                   | Failing streak: 0                                                                                                                 
+|                                                                   | Probe duration: 1s                                                                                                                
+|                                                                   | Probe output: withheld (may contain secrets)                                                                                      
+|                                                                   | [Telemetry: Docker API ContainerStats]                                                                                            
+|                                                                   | Peak memory: Collecting (no session sample yet)                                                                                   
+|                                                                   | Sample timestamp: unavailable                                                                                                     
+|                                                                   | Memory limit: 1000000000 B                                                                                                        
+|                                                                   | [Diagnostic Hypothesis & Next Actions]                                                                                            
+|                                                                   | Hypothesis: No specific cause established; inspect logs and healthcheck configuration.                                            
+|                                                                   | [p] View Previous Instance Logs                                                                                                   
+|                                                                   | [r] Restart                                                                                                                       
+|                                                                   | [c] View Failing Healthcheck Command                                                                                              
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
++-------------------------------------------------------------------+                                                                                                                                   
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s stop/start  g group  / filter   v 0 jobs                                                                                 
+Local daemon. No accounts. No telemetry.                                                                                                                                                                
+                                                                                                                                                                                                        

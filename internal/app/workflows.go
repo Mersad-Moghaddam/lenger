@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -248,38 +247,22 @@ func (m *Model) statsTick() tea.Cmd {
 }
 
 func (m *Model) loadStats() tea.Cmd {
-	if m.statsLoading || m.tab != 0 {
+	if m.statsLoading || m.tab != 0 || !m.focus.DrawerOpen {
 		return nil
 	}
-	ids := make([]string, 0, len(m.store.Containers))
-	for _, c := range m.store.Containers {
-		if c.Running() {
-			ids = append(ids, c.ID)
-		}
-	}
-	if len(ids) == 0 {
+	id := m.drawerID
+	c, ok := m.containerByID(id)
+	if !ok || !c.Running() {
 		return nil
 	}
 	m.statsLoading = true
-	ctx, service := m.ctx, m.service
+	m.drawerStatsRequest++
+	request := m.drawerStatsRequest
+	ctx, service, gen := m.drawerCtx, m.service, m.drawerGen
+	ctx, m.drawerStatsCancel = context.WithCancel(ctx)
 	return func() tea.Msg {
-		data := make(map[string]engine.ContainerStats, len(ids))
-		var mu sync.Mutex
-		var wg sync.WaitGroup
-		for _, id := range ids {
-			id := id
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				if sample, err := service.ContainerStats(ctx, id); err == nil {
-					mu.Lock()
-					data[id] = sample
-					mu.Unlock()
-				}
-			}()
-		}
-		wg.Wait()
-		return statsMsg{data: data}
+		data, err := service.ContainerStats(ctx, id)
+		return drawerStatsMsg{request: request, gen: gen, id: id, data: data, err: err}
 	}
 }
 
@@ -394,18 +377,6 @@ func (m *Model) confirmRemoveVolume() tea.Cmd {
 	return func() tea.Msg {
 		return volumeRemovedMsg{name: name, err: service.RemoveVolume(ctx, name)}
 	}
-}
-
-func (m *Model) openLogs(id string) tea.Cmd {
-	m.stopLogs()
-	m.logs = nil
-	m.logsID = id
-	m.logsFollow = true
-	m.logsPaused = false
-	m.logsFilter = ""
-	m.logsNotice = ""
-	m.overlay = "logs"
-	return m.streamLogs(true, false)
 }
 
 func (m *Model) stopLogs() {

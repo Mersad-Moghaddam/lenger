@@ -1,0 +1,60 @@
+@ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
+1 Containers  2 Images  3 Volumes  4 Networks                                                                                                                                                           
+============                                                                                                                                                                                            
++-------------------------------------------------------------------+│Health & Diagnostics · Live Logs · Metrics · [Env & Ports] · Timeline                                                             
+|  CONTAINERS  3                                                    | Environment · Space reveal · u reveal all · 60s idle remask                                                                       
+|  filter —                                                         | > MODE=development                                                                                                                
+|  > postgres-1              + running postgres:16                  |   API_TOKEN=••••••••••••                                                                                                          
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · u  | Ports · Enter preview                                                                                                             
+|    redis-1                 - exited redis:7.4                     |   5432/tcp                                                                                                                        
+|    cpu —  mem —  storefront · 6379/tcp                            | Display only: no safe HTTP preview                                                                                                
+|    web-1                   + running nginx:1.27-alpine            |                                                                                                                                   
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
+|                                                                   |                                                                                                                                   
++-------------------------------------------------------------------+                                                                                                                                   
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s stop/start  g group  / filter   v 0 jobs                                                                                 
+Local daemon. No accounts. No telemetry.                                                                                                                                                                
+                                                                                                                                                                                                        

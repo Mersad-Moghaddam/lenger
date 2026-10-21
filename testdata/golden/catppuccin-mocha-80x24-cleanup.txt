@@ -19,6 +19,6 @@
 |   |  … 2 more                                                            |   |
 |   |                                                                      |   |
 +---|  space toggle  enter confirm  R reload  esc close                    |---+
-x st+----------------------------------------------------------------------+filt
+Ente+----------------------------------------------------------------------+ s s
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

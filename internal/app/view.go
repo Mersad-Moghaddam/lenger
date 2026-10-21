@@ -12,6 +12,7 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/style"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/tokens"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/views"
+	"github.com/Mersad-Moghaddam/lenger/internal/ui/views/inspector"
 )
 
 // View composes one bounded frame and opts into the alternate screen.
@@ -54,14 +55,7 @@ func (m *Model) Render() string {
 	case m.err != nil:
 		body = s.Panel("DOCKER NEEDS ATTENTION", m.err.Message+"\n\n"+m.err.Suggestion+"\n\nR retry   q quit\nFor an offline preview: LENGER_ENGINE=fake lenger", w, height, true)
 	case m.tab == 0:
-		items := m.containers()
-		var inspect *engine.ContainerInspection
-		if len(items) > 0 {
-			if i, ok := m.containerIns[items[m.containerCursor].ID]; ok {
-				inspect = &i
-			}
-		}
-		body = views.Containers(s, items, m.containerCursor, m.selectedContain, m.containerFilter, inspect, m.containerDetail, m.containerRaw, m.stats, m.statCPU, m.statHistory, w, height, m.clock)
+		body = m.renderContainers(w, height)
 	case m.tab == 1:
 		items := m.items()
 		var inspect *engine.Inspection
@@ -88,7 +82,10 @@ func (m *Model) Render() string {
 	footer := "? help   : palette   c cleanup   p pull   / filter   J jobs   q quit"
 	switch m.tab {
 	case 0:
-		footer = "x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup"
+		footer = "Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s stop/start  g group  / filter"
+		if m.focus.DrawerOpen && m.focus.ActiveTab == 1 {
+			footer = "Tab focus  ↑/↓ scroll  f/G follow  / search  v level  y copy visible  l live  Esc back"
+		}
 	case 1:
 		footer = "p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup"
 	case 2:
@@ -115,9 +112,46 @@ func (m *Model) Render() string {
 	return base
 }
 
+// RenderDiagnostic returns a secret-safe frame for program-controlled captures.
+// Interactive View intentionally uses Render so explicit reveal remains useful.
+func (m *Model) RenderDiagnostic() string {
+	safe := *m
+	safe.drawerEnv = m.drawerEnv
+	safe.drawerEnv.EnvItems = append([]inspector.EnvItem(nil), m.drawerEnv.EnvItems...)
+	safe.drawerEnv.RemaskAll()
+	safe.healthCommandRevealed = false
+	return safe.Render()
+}
+
 func (m *Model) overlayContent() (string, string) {
 	s := m.sheet
 	switch m.overlay {
+	case "health-command":
+		d := m.containerIns[m.drawerID].DiagnosticEvidence()
+		if !m.healthCommandRevealed {
+			return "Healthcheck command", "Daemon command, error and probe output may contain credentials.\nExplicit on-screen reveal only; never copied or exported.\nEnter reveal · Esc cancel"
+		}
+		lines := []string{"Live on-screen daemon evidence (may contain secrets)"}
+		if d.HealthConfig != nil {
+			lines = append(lines, "Command: "+style.Clean(strings.Join(d.HealthConfig.Command, " ")))
+		} else {
+			lines = append(lines, "Healthcheck command unavailable")
+		}
+		if d.DaemonErrorKnown {
+			lines = append(lines, "Daemon error: "+style.Clean(d.DaemonError))
+		}
+		for _, p := range d.HealthHistory {
+			lines = append(lines, fmt.Sprintf("Probe exit %d: %s", p.ExitCode, style.Clean(p.Output)))
+		}
+		lines = wrapVisual(strings.Join(lines, "\n"), max(1, min(m.width, tokens.ModalWidth)-tokens.InsetX*4))
+		off := min(m.healthCommandScroll, max(0, len(lines)-1))
+		return "Healthcheck command", strings.Join(lines[off:], "\n") + "\n↑/↓ scroll · Esc remask and close"
+	case "port-preview":
+		return "Confirm browser launch", m.portPreview.URL + "\n\n" + m.portPreview.Warning + "\n\nEnter open in browser · Esc cancel"
+	case "stack-stop":
+		return "Confirm stack action", m.stackConfirmation()
+	case "drawer-log-filter":
+		return "Search live logs", m.input.View() + "\nEnter apply · Esc cancel"
 	case "help":
 		return "Keyboard chart", components.Help()
 	case "pull-input":

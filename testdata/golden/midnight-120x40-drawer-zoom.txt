@@ -1,0 +1,40 @@
+@ LENGER   Anchor your containers.                                                            - fixture engine · offline
+1 Containers  2 Images  3 Volumes  4 Networks                                                                           
+============                                                                                                            
+[Esc] Back                                                                                                              
+Health & Diagnostics · Live Logs · Metrics · [Env & Ports] · Timeline                                                   
+Environment · Space reveal · u reveal all · 60s idle remask                                                             
+> MODE=development                                                                                                      
+  API_TOKEN=••••••••••••                                                                                                
+Ports · Enter preview                                                                                                   
+  5432/tcp                                                                                                              
+Display only: no safe HTTP preview                                                                                      
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s stop/start  g group  / filter   v 0 jobs 
+Local daemon. No accounts. No telemetry.                                                                                
+                                                                                                                        

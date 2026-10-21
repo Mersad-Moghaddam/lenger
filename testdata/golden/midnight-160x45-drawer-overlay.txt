@@ -1,0 +1,45 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline                                                                                
+1 Con  2 Ima  3 Vol  4 Net                                                                                                                                      
+=====                                                                                                                                                           
+[Esc] Back                                                                                                                                                      
+Health & Diagnostics                                                                                                                                            
+Live Logs                                                                                                                                                       
+Metrics                                                                                                                                                         
+[Env & Ports]                                                                                                                                                   
+Timeline                                                                                                                                                        
+Environment · Space reveal · u reveal all · 60s idle remask                                                                                                     
+> MODE=development                                                                                                                                              
+  API_TOKEN=••••••••••••                                                                                                                                        
+Ports · Enter preview                                                                                                                                           
+  5432/tcp                                                                                                                                                      
+Display only: no safe HTTP preview                                                                                                                              
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+                                                                                                                                                                
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s s                                                                                
+Local daemon. No accounts. No telemetry.                                                                                                                        
+                                                                                                                                                                

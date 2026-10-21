@@ -22,6 +22,7 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/components"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/style"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/tokens"
+	"github.com/Mersad-Moghaddam/lenger/internal/ui/views/inspector"
 )
 
 type snapshotMsg struct {
@@ -155,6 +156,40 @@ type daemonMirrorsMsg struct {
 
 // Model contains session-local state; pointer ownership stays on the model thread.
 type Model struct {
+	focus                 FocusManager
+	drawerID              string
+	drawerGen             uint64
+	drawerCtx             context.Context
+	drawerRatio           float64
+	drawerLogs            inspector.LogsViewModel
+	drawerEnv             inspector.EnvViewModel
+	drawerScroll          int
+	drawerLatch           bool
+	peakMemory            map[string]uint64
+	portPreview           inspector.PortPreview
+	portMapping           string
+	portContainer         string
+	grouped               bool
+	groupCursor           int
+	groupCollapsed        map[string]bool
+	stackProject          string
+	stackIDs              []string
+	dividerDragging       bool
+	peakAt                map[string]time.Time
+	sessionStarted        time.Time
+	metricSamples         map[string][]timedMetric
+	metricStarted         map[string]time.Time
+	healthCommandRevealed bool
+	healthCommandScroll   int
+	containerOrder        map[string]int
+	drawerStatsCancel     context.CancelFunc
+	drawerStatsRequest    uint64
+	ratioWriter           *config.StateWriter
+	drawerOffsets         [5]int
+	drawerInspected       bool
+	drawerEnvFetched      bool
+	pendingPrevious       bool
+	statsError            bool
 	// Dependencies and lifetime are fixed at construction.
 	ctx     context.Context
 	cancel  context.CancelFunc
@@ -324,6 +359,14 @@ func New(ctx context.Context, s *services.Service, c config.Config, p tokens.Pal
 		stats:           make(map[string]engine.ContainerStats),
 		statCPU:         make(map[string]float64),
 		statHistory:     make(map[string][]float64),
+		peakMemory:      make(map[string]uint64),
+		peakAt:          make(map[string]time.Time),
+		metricSamples:   make(map[string][]timedMetric),
+		metricStarted:   make(map[string]time.Time),
+		sessionStarted:  time.Now(),
+		drawerRatio:     config.LoadState().ListRatio,
+		groupCollapsed:  make(map[string]bool),
+		containerOrder:  make(map[string]int),
 		completedJobs:   make(map[uint64]bool),
 		input:           input,
 		loading:         true,
@@ -358,12 +401,127 @@ func (m *Model) refresh() tea.Cmd {
 // Update routes messages; all network, filesystem and engine work uses commands.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case drawerRevealMsg:
+		if msg.gen != m.drawerGen || msg.id != m.drawerID || !m.focus.DrawerOpen {
+			return m, nil
+		}
+		if msg.err == nil {
+			m.drawerEnv = inspector.EnvViewModel{EnvItems: msg.items, LastActivity: time.Now()}
+			m.normalizeDrawerControls()
+		}
+		return m, nil
+	case drawerInspectMsg:
+		if msg.gen != m.drawerGen || msg.id != m.drawerID || !m.focus.DrawerOpen {
+			return m, nil
+		}
+		if msg.err != nil {
+			return m, m.notify("Container inspection unavailable.")
+		}
+		if msg.data.State != "running" && m.drawerStatsCancel != nil {
+			m.drawerStatsRequest++
+			m.drawerStatsCancel()
+			m.drawerStatsCancel = nil
+			m.statsLoading = false
+		}
+		m.containerIns[msg.id] = msg.data
+		m.drawerInspected = true
+		if len(m.drawerEnv.EnvItems) == 0 {
+			m.drawerEnv = inspector.EnvViewModel{EnvItems: inspector.ParseEnv(msg.data.Env)}
+		}
+		if m.drawerLatch {
+			m.focus.ActiveTab = int(inspector.DetermineInitialTab(msg.data))
+			m.drawerLatch = false
+		}
+		m.normalizeDrawerControls()
+		if m.pendingPrevious {
+			m.pendingPrevious = false
+			return m, m.streamDrawerLogs(true)
+		}
+		if !m.drawerEnvFetched {
+			m.drawerEnvFetched = true
+			return m, m.fetchDrawerEnvironment()
+		}
+		return m, nil
+	case drawerStatsMsg:
+		if msg.gen != m.drawerGen || msg.id != m.drawerID || !m.focus.DrawerOpen || msg.request != m.drawerStatsRequest {
+			return m, nil
+		}
+		m.statsLoading = false
+		m.statsError = msg.err != nil
+		if msg.err != nil {
+			sample := m.stats[msg.id]
+			sample.State = engine.TelemetryUnavailable
+			sample.CPUAvailable = false
+			sample.MemoryAvailable = false
+			sample.NetworkAvailable = false
+			sample.BlockAvailable = false
+			sample.PIDsAvailable = false
+			m.stats[msg.id] = sample
+			delete(m.statCPU, msg.id)
+			m.statHistory[msg.id] = nil
+		}
+		if m.drawerStatsCancel != nil {
+			m.drawerStatsCancel()
+			m.drawerStatsCancel = nil
+		}
+		if msg.err == nil {
+			sample := msg.data
+			if cpu, valid := sample.CPUPercent(m.stats[msg.id]); valid {
+				m.statCPU[msg.id] = cpu
+				m.metricSamples[msg.id] = append(m.metricSamples[msg.id], timedMetric{sample.At, cpu})
+				history := append(m.statHistory[msg.id], cpu)
+				if len(history) > 150 {
+					history = history[len(history)-150:]
+				}
+				m.statHistory[msg.id] = history
+			} else {
+				delete(m.statCPU, msg.id)
+				m.statHistory[msg.id] = nil
+			}
+			m.stats[msg.id] = sample
+			if m.metricStarted[msg.id].IsZero() {
+				m.metricStarted[msg.id] = sample.At
+			}
+			samples := m.metricSamples[msg.id]
+			start := 0
+			for start < len(samples) && samples[start].at.Before(sample.At.Add(-5*time.Minute)) {
+				start++
+			}
+			m.metricSamples[msg.id] = samples[start:]
+			if _, ok := m.peakAt[msg.id]; sample.MemoryAvailable && (!ok || sample.Memory > m.peakMemory[msg.id]) {
+				m.peakMemory[msg.id] = sample.Memory
+				m.peakAt[msg.id] = sample.At
+			}
+		}
+		gen, id := m.drawerGen, m.drawerID
+		return m, tea.Tick(2*time.Second, func(time.Time) tea.Msg { return drawerStatsTick{gen, id} })
+	case drawerStatsTick:
+		if msg.gen != m.drawerGen || msg.id != m.drawerID {
+			return m, nil
+		}
+		return m, m.loadStats()
+	case drawerMaskTick:
+		if msg.gen != m.drawerGen || !m.focus.DrawerOpen {
+			return m, nil
+		}
+		m.drawerEnv.CheckAutoRemask(time.Now())
+		if m.healthCommandRevealed && time.Since(m.drawerEnv.LastActivity) >= 60*time.Second {
+			m.healthCommandRevealed = false
+		}
+		gen := m.drawerGen
+		return m, tea.Tick(time.Second, func(time.Time) tea.Msg { return drawerMaskTick{gen} })
 	case tea.WindowSizeMsg:
 		m.width = max(0, msg.Width)
 		m.height = max(0, msg.Height)
 		m.input.SetWidth(max(1, min(tokens.ModalWidth, m.width)-tokens.InsetX*4))
 		return m, nil
 	case snapshotMsg:
+		m.rememberContainerOrder()
+		selectedID := ""
+		before := m.containers()
+		if len(before) > 0 {
+			selectedID = before[m.containerCursor].ID
+		}
 		m.refreshing = false
 		m.loading = false
 		m.clock = time.Now()
@@ -373,12 +531,28 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = nil
 			m.store.Replace(msg.data)
 			m.clamp()
+			for i, c := range m.containers() {
+				if c.ID == selectedID {
+					m.containerCursor = i
+					break
+				}
+			}
+			if cmd := m.rebindDrawerSelection(); cmd != nil {
+				return m, cmd
+			}
 		}
 		if m.refreshPending {
 			m.refreshPending = false
 			return m, tea.Batch(m.refresh(), m.loadStats())
 		}
 		if m.tab == 0 && m.err == nil {
+			if m.focus.DrawerOpen {
+				gen, id, ctx, service := m.drawerGen, m.drawerID, m.drawerCtx, m.service
+				return m, tea.Batch(m.loadStats(), func() tea.Msg {
+					data, err := service.InspectContainer(ctx, id)
+					return drawerInspectMsg{gen, id, data, err}
+				})
+			}
 			return m, m.loadStats()
 		}
 		return m, nil
@@ -537,6 +711,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.gen != m.logsGen {
 			return m, nil
 		}
+		if m.focus.DrawerOpen {
+			m.drawerLogs.Append(msg.entry)
+			return m, waitLog(m.drawerCtx, m.logCh, m.logsGen)
+		}
 		m.logs = append(m.logs, msg.entry)
 		if len(m.logs) > 50_000 {
 			m.logs = m.logs[len(m.logs)-50_000:]
@@ -547,6 +725,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.logsCancel = nil
+		if m.focus.DrawerOpen {
+			m.drawerLogs.DriverErr = msg.err
+			return m, nil
+		}
 		m.logsFollow = false
 		if msg.err != nil && m.ctx.Err() == nil && !errors.Is(msg.err, context.Canceled) {
 			m.logsNotice = engine.Classify(msg.err).Message
@@ -719,6 +901,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.motion.Next()
 	case tea.MouseClickMsg:
 		return m, m.mouse(msg.Mouse().X, msg.Mouse().Y)
+	case tea.MouseMotionMsg:
+		if m.dividerDragging {
+			return m, m.dragDivider(msg.Mouse().X)
+		}
+		return m, nil
+	case tea.MouseReleaseMsg:
+		m.dividerDragging = false
+		return m, nil
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
 			return m, m.quit()
@@ -748,6 +938,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) quit() tea.Cmd {
+	m.closeDrawer()
 	if m.logsCancel != nil {
 		m.logsCancel()
 	}
@@ -802,8 +993,29 @@ func (m *Model) containers() []engine.Container {
 			items = append(items, c)
 		}
 	}
-	sort.SliceStable(items, func(a, b int) bool { return items[a].Name < items[b].Name })
+	sort.SliceStable(items, func(a, b int) bool {
+		ao, aok := m.containerOrder[items[a].ID]
+		bo, bok := m.containerOrder[items[b].ID]
+		if aok && bok {
+			return ao < bo
+		}
+		if aok != bok {
+			return aok
+		}
+		return items[a].Name < items[b].Name
+	})
 	return items
+}
+
+func (m *Model) rememberContainerOrder() {
+	if m.containerOrder == nil {
+		m.containerOrder = make(map[string]int)
+	}
+	for _, c := range m.containers() {
+		if _, ok := m.containerOrder[c.ID]; !ok {
+			m.containerOrder[c.ID] = len(m.containerOrder)
+		}
+	}
 }
 
 func (m *Model) projects() []engine.ComposeProject {
@@ -889,23 +1101,6 @@ func (m *Model) inspect() tea.Cmd {
 	}
 	ctx, service := m.ctx, m.service
 	return func() tea.Msg { i, err := service.Inspect(ctx, id); return inspectMsg{id, i, err} }
-}
-
-func (m *Model) inspectContainer() tea.Cmd {
-	items := m.containers()
-	if len(items) == 0 {
-		return nil
-	}
-	c := items[m.containerCursor]
-	m.containerDetail = true
-	if _, ok := m.containerIns[c.ID]; ok {
-		return nil
-	}
-	ctx, service := m.ctx, m.service
-	return func() tea.Msg {
-		data, err := service.InspectContainer(ctx, c.ID)
-		return containerInspectMsg{id: c.ID, data: data, err: err}
-	}
 }
 
 // Gallery seeds a model for rendering only, without starting Init or background I/O.
@@ -1037,6 +1232,48 @@ func (m *Model) Gallery(batch store.Snapshot, tab int, overlay string, inspectio
 		m.mirrorDiffText = "--- /etc/docker/daemon.json\n+++ /etc/docker/daemon.json\n+   \"registry-mirrors\": [\"https://mirror.gcr.io\"]"
 		m.mirrorSudoCmd = "echo '{\"registry-mirrors\": [\"https://mirror.gcr.io\"]}' | sudo tee /etc/docker/daemon.json && sudo systemctl reload docker"
 	}
+}
+
+// GalleryDrawer seeds deterministic drawer geometry without starting workers.
+func (m *Model) GalleryDrawer(tab int, zoom bool, long bool) {
+	if len(m.containers()) == 0 {
+		return
+	}
+	c := m.containers()[0]
+	m.drawerID = c.ID
+	m.focus.OpenDrawer(tab)
+	m.focus.Zoomed = zoom
+	m.focus.Area = FocusDrawerControls
+	m.drawerRatio = .35
+	m.drawerEnv = inspector.EnvViewModel{EnvItems: inspector.ParseEnv([]string{"MODE=development", "API_TOKEN=fixture-secret"})}
+	if long {
+		m.drawerEnv.EnvItems = inspector.ParseEnv([]string{"LONG_VALUE=" + strings.Repeat("wrapped evidence ", 18) + "TAIL"})
+	}
+	if i, err := m.service.InspectContainer(m.ctx, c.ID); err == nil {
+		i.InspectedAt = m.clock
+		if i.HealthCheck != nil {
+			p := *i.HealthCheck
+			p.Start = m.clock.Add(-15 * time.Second)
+			p.End = m.clock.Add(-14 * time.Second)
+			i.HealthCheck = &p
+		}
+		d := i.DiagnosticEvidence()
+		for n := range d.HealthHistory {
+			d.HealthHistory[n].Start = m.clock.Add(-15 * time.Second)
+			d.HealthHistory[n].End = m.clock.Add(-14 * time.Second)
+		}
+		i = i.WithDiagnosticEvidence(d)
+		m.containerIns[c.ID] = i
+	}
+	m.normalizeDrawerControls()
+}
+
+// GalleryHealthFocus selects a distinct deterministic control-focus fixture.
+func (m *Model) GalleryHealthFocus() {
+	m.focus.ActiveTab = 0
+	m.focus.Area = FocusDrawerControls
+	m.normalizeDrawerControls()
+	m.focus.ControlIdx = 1
 }
 
 func (m *Model) seedGalleryStats(batch store.Snapshot) {

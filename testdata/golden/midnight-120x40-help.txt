@@ -1,14 +1,14 @@
 @ LENGER   Anchor your containers.                                                            - fixture engine · offline
 1 Containers  2 Images  3 Volumes  4 Networks                                                                           
 ============                                                                                                            
-+----------------------------------------------+  +--------------------------------------------------------------------+
-|  CONTAINERS  3                               |  |  postgres-1                                                        |
-|  filter —                                    |  |  db1  + running                                                    |
-|  > postgres-1       + running postgres:16    |  |  postgres:16                                                       |
++----------------------------------------------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                                                                       |
+|  filter —                                                                                                            |
+|  > postgres-1               + running postgres:16                                                                    |
 |    cpu  7.1% ++++*#*+*+----------------------------------------------------------------------+                       |
-|    redis-1          - |  Keyboard chart                                                      |                       |
+|    redis-1            |  Keyboard chart                                                      |                       |
 |    cpu —  mem —  store|  1–7       Switch view                                               |                       |
-|    web-1            + |  j/k ↑/↓   Move through the active list                              |                       |
+|    web-1              |  j/k ↑/↓   Move through the active list                              |                       |
 |    cpu 18.4% +*+*+*+*+|  enter / i Inspect the selected resource                             |                       |
 |                       |  space     Toggle selection (images/containers)                      |                       |
 |                       |  shift+↓/↑ Extend selection                                          |                       |
@@ -31,10 +31,10 @@
 |                       |  esc       Back / hide overlay                                       |                       |
 |                       |  q ctrl+c  Quit and cancel jobs                                      |                       |
 |                       +----------------------------------------------------------------------+                       |
-|                                              |  |                                                                    |
-|                                              |  |                                                                    |
-|                                              |  |                                                                    |
-+----------------------------------------------+  +--------------------------------------------------------------------+
-x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup   v 0 jobs                
+|                                                                                                                      |
+|                                                                                                                      |
+|                                                                                                                      |
++----------------------------------------------------------------------------------------------------------------------+
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s stop/start  g group  / filter   v 0 jobs 
 Local daemon. No accounts. No telemetry.                                                                                
                                                                                                                         

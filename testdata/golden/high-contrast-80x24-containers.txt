@@ -19,6 +19,6 @@
 |                                                                              |
 |                                                                              |
 +------------------------------------------------------------------------------+
-x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filt
+Enter inspect  Tab focus  ←/→ tabs  z zoom  [/] resize  Esc back  r restart  s s
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

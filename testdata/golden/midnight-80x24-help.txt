@@ -19,6 +19,6 @@
 |   |  y         Copy equivalent CLI command                               |   |
 |   |  … content truncated                                                 |   |
 +---|  q ctrl+c  Quit and cancel jobs                                      |---+
-x st+----------------------------------------------------------------------+filt
+Ente+----------------------------------------------------------------------+ s s
 Local daemon. No accounts. No telemetry.                                        
                                                                                 

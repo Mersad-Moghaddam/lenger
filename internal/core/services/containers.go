@@ -21,6 +21,22 @@ var (
 	resourceName  = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.-]*$`)
 )
 
+// FetchEnvironmentForLiveReveal is the explicit, ephemeral UI reveal boundary.
+// Never pass this result to inspection caches, diagnostics, logs or exports.
+// The caller must discard the detached values when its drawer closes.
+func (s *Service) FetchEnvironmentForLiveReveal(ctx context.Context, id string) ([]string, error) {
+	if id == "" {
+		return nil, fmt.Errorf("container ID is required")
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+	i, err := s.engine.InspectContainer(ctx, id)
+	if err != nil {
+		return nil, engine.Classify(err)
+	}
+	return slices.Clone(i.Env), nil
+}
+
 // InspectContainer returns a detached, conservatively masked structured view.
 func (s *Service) InspectContainer(ctx context.Context, id string) (engine.ContainerInspection, error) {
 	ctx, cancel := context.WithTimeout(ctx, operationTimeout)

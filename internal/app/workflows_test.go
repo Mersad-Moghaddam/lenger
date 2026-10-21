@@ -63,22 +63,23 @@ func TestRunWizardRoutesFieldsWithoutLeakingInput(t *testing.T) {
 	}
 }
 
-func TestContainerLogsOverlayPausesWithoutStartingIO(t *testing.T) {
+func TestContainerLogsDrawerPausesFollowWithoutStoppingCollection(t *testing.T) {
 	m := fixtureModel(t)
 	m.tab = 0
 	_, cmd := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
-	if cmd == nil || m.overlay != "logs" || m.logsID == "" {
+	if cmd == nil || !m.focus.DrawerOpen || m.focus.ActiveTab != 1 || m.logsID == "" {
 		t.Fatal("logs key did not open a bounded stream")
 	}
-	_, _ = m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
-	if !m.logsPaused || !strings.Contains(m.logsNotice, "paused") {
-		t.Fatal("pause did not detach the stream")
+	m.focus.Area = FocusDrawerControls
+	_, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
+	if m.drawerLogs.Follow || m.logsCancel == nil {
+		t.Fatal("scroll must pause follow, not detach collection")
 	}
 	_, _ = m.Update(tea.KeyPressMsg{Code: 'f', Text: "f"})
-	if m.logsPaused || !m.logsFollow {
+	if !m.drawerLogs.Follow {
 		t.Fatal("follow did not restart the stream")
 	}
-	m.closeOverlay()
+	m.closeDrawer()
 }
 
 func TestCleanupRequiresTypedVolumesConfirmation(t *testing.T) {

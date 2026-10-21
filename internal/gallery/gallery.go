@@ -9,6 +9,7 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/config"
 	"github.com/Mersad-Moghaddam/lenger/internal/core/services"
 	"github.com/Mersad-Moghaddam/lenger/internal/engine/fake"
+	"github.com/Mersad-Moghaddam/lenger/internal/ui/style"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/theme"
 	"io"
 	"strconv"
@@ -60,6 +61,7 @@ func Frames(ctx context.Context, name string, size Size) ([]Frame, error) {
 		overlay string
 	}
 	screens := []screen{
+		{"drawer-split", 0, ""}, {"drawer-overlay", 0, ""}, {"drawer-zoom", 0, ""}, {"drawer-focus", 0, ""}, {"drawer-long", 0, ""},
 		{"containers", 0, ""}, {"images", 1, ""}, {"volumes", 2, ""}, {"networks", 3, ""},
 		{"pull", 1, "pull"}, {"palette", 1, "palette"}, {"help", 0, "help"}, {"removal", 1, "remove"}, {"jobs", 1, "jobs"},
 		{"run", 1, "run"}, {"logs", 0, "logs"}, {"cleanup", 0, "cleanup"}, {"container-action", 0, "container-action"}, {"exec", 0, "exec"}, {"volume-removal", 2, "remove-volume"},
@@ -76,7 +78,20 @@ func Frames(ctx context.Context, name string, size Size) ([]Frame, error) {
 		m := app.New(ctx, svc, c, p)
 		_, _ = m.Update(tea.WindowSizeMsg{Width: size.Width, Height: size.Height})
 		m.Gallery(batch, screen.tab, screen.overlay, &inspection)
-		frames = append(frames, Frame{screen.name, m.Render()})
+		if strings.HasPrefix(screen.name, "drawer-") {
+			m.GalleryDrawer(3, screen.name == "drawer-zoom", screen.name == "drawer-long")
+			if screen.name == "drawer-focus" {
+				m.GalleryHealthFocus()
+			}
+			if screen.name == "drawer-overlay" {
+				_, _ = m.Update(tea.WindowSizeMsg{Width: min(size.Width, 80), Height: size.Height})
+			}
+		}
+		content := m.RenderDiagnostic()
+		if screen.name == "drawer-overlay" {
+			content = style.Fit(content, size.Width, size.Height)
+		}
+		frames = append(frames, Frame{screen.name, content})
 	}
 	return frames, nil
 }

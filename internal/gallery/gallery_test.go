@@ -14,6 +14,28 @@ import (
 
 var update = flag.Bool("update", false, "explicitly update reviewed gallery goldens")
 
+func TestDrawerFocusFrameDistinct(t *testing.T) {
+	frames, err := Frames(context.Background(), "midnight", Size{120, 40})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var split, focus string
+	for _, f := range frames {
+		if f.Name == "drawer-split" {
+			split = f.Content
+		}
+		if f.Name == "drawer-focus" {
+			focus = f.Content
+		}
+	}
+	if split == focus {
+		t.Fatal("focus frame duplicates split state")
+	}
+	if !strings.Contains(focus, "> 2. Restart container") {
+		t.Fatal("focus frame lacks distinct Health control selection")
+	}
+}
+
 func TestResourceFrames(t *testing.T) {
 	frames, err := Frames(context.Background(), theme.Names()[0], Size{120, 40})
 	if err != nil {

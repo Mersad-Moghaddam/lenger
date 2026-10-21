@@ -9,6 +9,37 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/engine/fake"
 )
 
+func TestExplicitLiveEnvRevealBoundary(t *testing.T) {
+	s := New(fake.New())
+	ctx := context.Background()
+	id, err := s.Run(ctx, engine.RunSpec{Name: "reveal-test", Image: "nginx:1.27-alpine", Env: []string{"API_TOKEN=private-acceptance"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	safe, err := s.InspectContainer(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.Join(safe.Env, " "), "private-acceptance") {
+		t.Fatal("default inspection leaked")
+	}
+	raw, err := s.FetchEnvironmentForLiveReveal(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(strings.Join(raw, " "), "DB_PASSWORD=fixture-secret") {
+		t.Fatal("explicit reveal cannot retrieve value")
+	}
+	raw[0] = "changed"
+	again, err := s.FetchEnvironmentForLiveReveal(ctx, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again[0] == "changed" {
+		t.Fatal("reveal aliases engine environment")
+	}
+}
+
 func TestRunContainerLifecycleAndMaskedInspection(t *testing.T) {
 	ctx := context.Background()
 	s := New(fake.New())

@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type action struct{ name, key, command string }
@@ -95,6 +96,7 @@ func (m *Model) openInput(kind string) tea.Cmd {
 	return m.input.Focus()
 }
 func (m *Model) closeOverlay() {
+	m.healthCommandRevealed = false
 	if m.overlay == "logs" {
 		m.stopLogs()
 	}
@@ -110,8 +112,7 @@ func (m *Model) switchTab(target int) tea.Cmd {
 		return nil
 	}
 	if m.tab == 0 && m.drawerCancel != nil {
-		m.drawerCancel()
-		m.drawerCancel = nil
+		m.closeDrawer()
 	}
 	m.tab = target
 	m.detail = false
@@ -126,6 +127,12 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 	k := msg.String()
 	if m.overlay != "" {
 		return m.overlayKey(msg)
+	}
+	if handled, cmd := m.groupKey(k); handled {
+		return cmd
+	}
+	if handled, cmd := m.drawerKey(k); handled {
+		return cmd
 	}
 	for action, binding := range m.config.Keys {
 		if binding == k {
@@ -164,7 +171,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		for n, c := range m.containers() {
 			if c.ID == id {
 				m.containerCursor = n
-				return tea.Batch(m.inspectContainer(), statsCmd)
+				return tea.Batch(m.openDrawer(), statsCmd)
 			}
 		}
 		return statsCmd
@@ -257,17 +264,14 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			return m.inspect()
 		}
 		if m.tab == 0 {
-			return m.inspectContainer()
+			return m.openDrawer()
 		}
 	case "tab":
 		if m.tab == 1 {
 			return m.inspect()
 		}
 		if m.tab == 0 {
-			m.containerDetail = !m.containerDetail
-			if m.containerDetail {
-				return m.inspectContainer()
-			}
+			return nil
 		}
 	case "u":
 		if m.tab == 0 {
@@ -278,7 +282,7 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			return m.openRun()
 		}
 		if m.tab == 0 {
-			return m.triggerContainerAction(engine.ActionRestart, false)
+			return m.triggerContainerAction(engine.ActionRestart, true)
 		}
 	case "x":
 		if m.tab == 0 {
@@ -286,7 +290,14 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 		}
 	case "s":
 		if m.tab == 0 {
-			return m.triggerContainerAction(engine.ActionStop, false)
+			ids := m.containerIDs()
+			action := engine.ActionStop
+			if len(ids) == 1 {
+				if c, ok := m.containerByID(ids[0]); ok && !c.Running() {
+					action = engine.ActionStart
+				}
+			}
+			return m.triggerContainerAction(action, false)
 		}
 	case "K":
 		if m.tab == 0 {
@@ -313,7 +324,13 @@ func (m *Model) key(msg tea.KeyPressMsg) tea.Cmd {
 			if len(ids) == 0 {
 				return m.notify("No container selected.")
 			}
-			return m.openLogs(ids[0])
+			cmd := m.openDrawer()
+			m.drawerOffsets[m.focus.ActiveTab] = m.drawerScroll
+			m.focus.ActiveTab = 1
+			m.drawerScroll = m.drawerOffsets[1]
+			m.drawerLatch = false
+			m.normalizeDrawerControls()
+			return cmd
 		}
 	case "e":
 		if m.tab == 0 {
@@ -413,6 +430,42 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 		return nil
 	}
 	switch m.overlay {
+	case "health-command":
+		if k == "down" || k == "j" {
+			m.healthCommandScroll++
+			return nil
+		}
+		if k == "up" || k == "k" {
+			m.healthCommandScroll = max(0, m.healthCommandScroll-1)
+			return nil
+		}
+		if k == "enter" {
+			m.healthCommandRevealed = true
+			m.drawerEnv.RecordActivity(time.Now())
+		}
+		return nil
+	case "port-preview":
+		if k == "enter" {
+			return m.confirmPortPreview()
+		}
+		return nil
+	case "stack-stop":
+		if k == "enter" {
+			ids := append([]string(nil), m.stackIDs...)
+			action := m.actionName
+			m.closeOverlay()
+			return m.runContainerAction(action, ids)
+		}
+		return nil
+	case "drawer-log-filter":
+		if k == "enter" {
+			m.drawerLogs.SearchQuery = m.input.Value()
+			m.closeOverlay()
+			return nil
+		}
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
+		return cmd
 	case "help":
 		if k == "?" || k == "q" {
 			m.closeOverlay()
@@ -462,7 +515,7 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 		if k == "enter" {
 			m.setActiveFilter(m.input.Value())
 			m.closeOverlay()
-			return nil
+			return m.rebindDrawerSelection()
 		}
 	case "log-filter":
 		if k == "enter" {
@@ -823,6 +876,11 @@ func (m *Model) mouse(x, y int) tea.Cmd {
 			offset = end
 		}
 	}
+	if m.tab == 0 {
+		if handled, cmd := m.drawerMouse(x, y); handled {
+			return cmd
+		}
+	}
 	if m.tab == 0 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
 		row := y - tokens.HeaderHeight - tokens.PanelFrame - 1
 		capacity := max(1, m.height-tokens.HeaderHeight-tokens.FooterHeight-tokens.PanelFrame-tokens.InsetY*2)
@@ -830,6 +888,7 @@ func (m *Model) mouse(x, y int) tea.Cmd {
 		index := start + row
 		if index < len(m.containers()) {
 			m.containerCursor = index
+			return m.openDrawer()
 		}
 	}
 	if m.tab == 1 && y >= tokens.HeaderHeight+tokens.PanelFrame+1 {
