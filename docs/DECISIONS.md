@@ -1,5 +1,19 @@
 # Decisions and implementation ledger
 
+## Second architecture review — 2026-10-21
+
+- Retained the engine/service/store/UI architecture rather than introducing
+  speculative frameworks. See `REVIEW.md` for the bounded review and limitations.
+- Split credential configuration loading, deterministic selection and legacy
+  auth decoding from cancellable helper execution. Exact empty entries no longer
+  accidentally fall back to stale legacy credentials.
+- Image removal now uses a per-image deadline, checks cancellation before I/O,
+  and classifies deletion errors. The daemon remains the final reference-check
+  authority because another client can race the application-side check.
+- Fake mode ignores unsupported Docker-context settings; real mode still rejects
+  them explicitly instead of silently targeting a different daemon.
+- Added regression specifications; no tests, builds or lint were executed.
+
 ## Review follow-up — 2026-10-21
 
 This section supersedes older coding-stage notes where they conflict.

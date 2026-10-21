@@ -11,6 +11,39 @@ import (
 	"github.com/moby/moby/api/types/registry"
 )
 
+func TestCredentialSelectionPrefersExactThenStableLegacyKeys(t *testing.T) {
+	cfg := credentialConfig{Auths: map[string]registry.AuthConfig{
+		"registry.example":             {Username: "exact"},
+		"https://registry.example/v1/": {Username: "legacy"},
+		"http://registry.example/v1/":  {Username: "first-legacy"},
+	}}
+	if got := cfg.authFor("registry.example").Username; got != "exact" {
+		t.Fatalf("exact registry key lost precedence: %q", got)
+	}
+	delete(cfg.Auths, "registry.example")
+	if got := cfg.authFor("registry.example").Username; got != "first-legacy" {
+		t.Fatalf("legacy credential selection is not deterministic: %q", got)
+	}
+}
+
+func TestCredentialSelectionPreservesEmptyExactEntry(t *testing.T) {
+	cfg := credentialConfig{Auths: map[string]registry.AuthConfig{
+		"registry.example":             {},
+		"https://registry.example/v1/": {Username: "stale"},
+	}}
+	if got := cfg.authFor("registry.example"); got.Username != "" {
+		t.Fatal("an empty exact entry reused stale legacy credentials")
+	}
+}
+
+func TestDecodeStoredAuthRejectsMalformedCredentials(t *testing.T) {
+	for _, encoded := range []string{"not-base64!", "bm8tY29sb24="} {
+		if _, err := decodeStoredAuth(registry.AuthConfig{Auth: encoded}); err == nil {
+			t.Fatal("malformed stored credentials were accepted")
+		}
+	}
+}
+
 func TestRegistryAuthUsesExistingDockerConfig(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("DOCKER_CONFIG", dir)

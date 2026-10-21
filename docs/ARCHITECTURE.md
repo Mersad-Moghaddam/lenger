@@ -36,6 +36,15 @@ This document describes the implemented package boundaries, not a second PRD.
 - A session context cancels event watchers, polling and workers. Pull response
   bodies close on every return path. Stream delivery selects on cancellation.
 - Destructive operations recheck container references and never use force.
+- Each image removal has a separate deadline covering its reference check and
+  deletion. Cancellation prevents subsequent adapter calls. Deletion failures
+  are classified at the service boundary; destructive operations are not retried.
+- Docker credential configuration loading/selection lives in
+  `credential_config.go`; helper subprocess execution lives in `credentials.go`.
+  Exact registry keys take precedence, followed by sorted legacy keys. Helper
+  output is never included in errors. No credentials are written or cached.
+- Docker-context validation applies only to the real adapter; offline fake mode
+  must not depend on daemon endpoint configuration.
 - Inspection conservatively masks every environment and label value, command
   argument and image-history command. No secret-reveal action exists yet.
 - Unknown/deferred capabilities are explicit, never simulated against real Docker.

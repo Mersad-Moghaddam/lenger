@@ -2,12 +2,17 @@
 package main
 
 import (
-	tea "charm.land/bubbletea/v2"
-	"charm.land/log/v2"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
+	"os"
+	"path/filepath"
+
+	tea "charm.land/bubbletea/v2"
+	"charm.land/log/v2"
+	"github.com/charmbracelet/colorprofile"
+
 	"github.com/Mersad-Moghaddam/lenger/internal/app"
 	"github.com/Mersad-Moghaddam/lenger/internal/config"
 	"github.com/Mersad-Moghaddam/lenger/internal/core/services"
@@ -17,9 +22,6 @@ import (
 	"github.com/Mersad-Moghaddam/lenger/internal/gallery"
 	"github.com/Mersad-Moghaddam/lenger/internal/platform/omarchy"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/theme"
-	"github.com/charmbracelet/colorprofile"
-	"os"
-	"path/filepath"
 )
 
 func main() {
@@ -65,8 +67,8 @@ func run() error {
 	if *themeFlag != "" {
 		c.UI.Theme = *themeFlag
 	}
-	if c.Docker.Context != "" || os.Getenv("DOCKER_CONTEXT") != "" {
-		return engine.ErrNotImplemented{Requirement: "PLT-04 Docker contexts; use DOCKER_HOST for unix/tcp endpoints"}
+	if err := validateEngine(*engineFlag, c.Docker.Context); err != nil {
+		return err
 	}
 	p, err := theme.Bundled("midnight")
 	if err != nil {
@@ -86,8 +88,6 @@ func run() error {
 		e = fake.New()
 	case "docker":
 		e, err = docker.New()
-	default:
-		return fmt.Errorf("unknown engine %q: use docker or fake", *engineFlag)
 	}
 	if err != nil {
 		return err
@@ -120,6 +120,21 @@ func run() error {
 		return fmt.Errorf("run terminal: %w", err)
 	}
 	return nil
+}
+
+// validateEngine keeps real-daemon restrictions out of offline fixture mode.
+func validateEngine(name, configuredContext string) error {
+	switch name {
+	case "fake":
+		return nil
+	case "docker":
+		if configuredContext != "" || os.Getenv("DOCKER_CONTEXT") != "" {
+			return engine.ErrNotImplemented{Requirement: "PLT-04 Docker contexts; use DOCKER_HOST for unix/tcp endpoints"}
+		}
+		return nil
+	default:
+		return fmt.Errorf("unknown engine %q: use docker or fake", name)
+	}
 }
 
 func debugFile() (*os.File, error) {

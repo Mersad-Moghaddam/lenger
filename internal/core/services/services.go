@@ -11,20 +11,23 @@ import (
 	"sync"
 	"time"
 
+	"github.com/distribution/reference"
+
 	"github.com/Mersad-Moghaddam/lenger/internal/core/store"
 	"github.com/Mersad-Moghaddam/lenger/internal/engine"
-	"github.com/distribution/reference"
 )
 
 // Service owns application policy, leaving SDK types inside adapters.
 type Service struct{ engine engine.Engine }
+
+const operationTimeout = 10 * time.Second
 
 // New wraps a real or fake engine with the same policy.
 func New(e engine.Engine) *Service { return &Service{engine: e} }
 
 // Snapshot fetches independent resource lists concurrently under a deadline.
 func (s *Service) Snapshot(ctx context.Context) (store.Snapshot, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 	var result store.Snapshot
 	var imageErr, containerErr error
@@ -45,7 +48,7 @@ func (s *Service) Snapshot(ctx context.Context) (store.Snapshot, error) {
 // Inspect always masks environment values, label values, commands and history.
 // Image history and entrypoints may contain build-time secrets as well as env.
 func (s *Service) Inspect(ctx context.Context, id string) (engine.Inspection, error) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
 	defer cancel()
 	i, err := s.engine.InspectImage(ctx, id)
 	if err != nil {
@@ -84,24 +87,35 @@ func maskedArguments(args []string) []string {
 func (s *Service) Remove(ctx context.Context, ids []string) map[string]error {
 	result := make(map[string]error, len(ids))
 	for _, id := range ids {
-		containers, err := s.engine.ListContainers(ctx)
-		if err != nil {
-			result[id] = engine.Classify(err)
-			continue
-		}
-		used := false
-		for _, c := range containers {
-			if c.ImageID == id {
-				result[id] = fmt.Errorf("image is still used by %s; remove that container first", c.Name)
-				used = true
-				break
-			}
-		}
-		if !used {
-			result[id] = s.engine.RemoveImage(ctx, id)
-		}
+		result[id] = s.removeImage(ctx, id)
 	}
 	return result
+}
+
+func (s *Service) removeImage(ctx context.Context, id string) error {
+	if err := ctx.Err(); err != nil {
+		return engine.Classify(err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, operationTimeout)
+	defer cancel()
+	containers, err := s.engine.ListContainers(ctx)
+	if err != nil {
+		return engine.Classify(err)
+	}
+	for _, c := range containers {
+		if c.ImageID == id {
+			return fmt.Errorf("image is still used by a container; remove that container first")
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return engine.Classify(err)
+	}
+	// The daemon must still enforce references: another client can create a
+	// container between the recheck and this non-forced deletion.
+	if err := s.engine.RemoveImage(ctx, id); err != nil {
+		return engine.Classify(err)
+	}
+	return nil
 }
 
 // NormalizeReference validates and adds the conventional latest tag.
