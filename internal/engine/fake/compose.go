@@ -96,7 +96,7 @@ func (e *Engine) Compose(ctx context.Context, action engine.ComposeAction, opts 
 			}
 		}
 	}
-	e.broadcast(engine.Event{Kind: "compose", Action: string(action), ID: projectName, At: time.Now().UTC()})
+	e.broadcastLocked(engine.Event{Kind: "compose", Action: string(action), ID: projectName, At: time.Now().UTC()})
 
 	return nil
 }

@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+       =====                                                                    
++------------------------------------------------------------------------------+
+|  IMAGES  6                                                                   |
+|  sort name  /                                                                |
+|  >+----------------------------------------------------------------------+   |
+|   |  Confirm image removal                                               |   |
+|   |  Remove the following local images?                                  |   |
+|   |                                                                      |   |
+|   |  golang:1.23  843.0 MB                                               |   |
+|   |                                                                      |   |
+|   |  No force flag. Containers and volumes are not removed.              |   |
+|   |  Equivalent: docker image rm sha256:0000000000000000000000000000000  |   |
+|   |                                                                      |   |
+|   |  y confirm   n / esc cancel                                          |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

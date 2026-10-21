@@ -167,7 +167,7 @@ func NormalizeRunSpec(spec engine.RunSpec) (engine.RunSpec, error) {
 		spec.Ports[n] = value
 	}
 	spec.Env = slices.Clone(spec.Env)
-	for n, value := range spec.Env {
+	for _, value := range spec.Env {
 		if strings.ContainsAny(value, "\x00\n\r") {
 			return spec, fmt.Errorf("environment values cannot contain control characters")
 		}

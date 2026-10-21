@@ -4,7 +4,6 @@ package omarchy
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/theme"
 	"github.com/Mersad-Moghaddam/lenger/internal/ui/tokens"
 	"github.com/pelletier/go-toml/v2"

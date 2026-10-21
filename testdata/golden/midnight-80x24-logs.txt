@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+              =====                                                             
++------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                               |
+|  filter —                                                                    |
+|  >+----------------------------------------------------------------------+   |
+|   |  Container logs                                                      |   |
+|   |  web-1  = paused  4 lines                                            |   |
+|   |  timestamps                                                          |   |
+|   |  fixture buffer · stream detached                                    |   |
+|   |    11:59:56.000 server listening on :8080                            |   |
+|   |    11:59:57.000 connected to postgres:5432                           |   |
+|   |  ! 11:59:58.000 warn: cache miss for /api/health                     |   |
+|   |    11:59:59.000 GET /api/health 200 2.4ms                            |   |
+|   |                                                                      |   |
+|   |  p pause  f follow  t timestamps  w wrap  / filter  c copy  s save   |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filt
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

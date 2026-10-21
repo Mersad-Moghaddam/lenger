@@ -164,13 +164,13 @@ func ContainerDetail(s style.Sheet, c engine.Container, inspect *engine.Containe
 			probe := inspect.HealthCheck
 			lines = append(lines,
 				fmt.Sprintf("Status: %s   Exit code: %d   Failing streak: %d",
-					components.Pill(s, probe.Status),
+					style.Clean(probe.Status),
 					probe.ExitCode,
 					probe.FailingStreak,
 				),
 			)
 			if !probe.End.IsZero() {
-				lines = append(lines, fmt.Sprintf("Last checked: %s ago", components.Age(probe.End, now)))
+				lines = append(lines, fmt.Sprintf("Last checked: %s", components.Age(probe.End, now)))
 			}
 			if probe.Output != "" {
 				cleanOut := strings.ReplaceAll(strings.TrimSpace(probe.Output), "\r", "")

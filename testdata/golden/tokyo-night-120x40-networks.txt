@@ -1,0 +1,40 @@
+@ LENGER   Anchor your containers.                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                        
+                                                            ==========                                                  
++-------------------------------------------------+  +-----------------------------------------------------------------+
+|  NETWORKS  4                                    |  |  NETWORK DETAIL                                                 |
+|  filter —                                       |  |  bridge · bridge                                                |
+|  > bridge              bridge   2 endpoints     |  |  bridge-id                                                      |
+|    host                host     0 endpoints     |  |                                                                 |
+|    none                null     0 endpoints     |  |  Created 30d ago                                                |
+|    storefront_default  bridge   3 endpoints     |  |                                                                 |
+|                                                 |  |  IPAM CONFIGURATION                                             |
+|                                                 |  |  Subnet: 172.17.0.0/16   Gateway: 172.17.0.1                    |
+|                                                 |  |                                                                 |
+|                                                 |  |  CONNECTED CONTAINERS (2)                                       |
+|                                                 |  |  web-1            172.17.0.2/16      web1                       |
+|                                                 |  |  postgres-1       172.17.0.3/16      db1                        |
+|                                                 |  |                                                                 |
+|                                                 |  |  c create · d remove · / filter                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
+|                                                 |  |                                                                 |
++-------------------------------------------------+  +-----------------------------------------------------------------+
+c create  d remove  / filter  R refresh  q quit   v 0 jobs                                                              
+Local daemon. No accounts. No telemetry.                                                                                
+                                                                                                                        

@@ -1,0 +1,40 @@
+@ LENGER   Anchor your containers.                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                        
+             ========                                                                                                   
++---------------------------------------------------------+  +---------------------------------------------------------+
+|  IMAGES  6                                              |  |  golang:1.23                                            |
+|  sort name  /                                           |  |  000000000000  843.0 MB                                 |
+|  > golang:1.23          843.0 MB unused                 |  |  4d ago                                                 |
+|    nginx:1.27-alpine     48.0 MB in use                 |  |                                                         |
+|    node:22-slim         241.0 MB unused                 |  |  Press i or Enter to load inspection and layers.        |
+|    postgres:16          432.0 MB in use                 |  |                                                         |
+|    redis:7.4            117.0 MB in use                 |  |  USED BY                                                |
+|    ubuntu:24.04          78.0 MB unused                 |  |  No containers reference this image.                    |
+|                                                         |  |                                                         |
+|                                                         |  |  [U] Check update  [S] Registry search  [t] Tag  [P] P  |
+|                       +----------------------------------------------------------------------+                       |
+|                       |  Pull image                                                          |                       |
+|                       |  redis:7.4  + running                                                |                       |
+|                       |   62%  12.4 MB/s  ETA 9s                                             |                       |
+|                       |  ######################################------------------------      |                       |
+|                       |                                                                      |                       |
+|                       |  a3f1c9e2b7d4  ####################  Pull complete                   |                       |
+|                       |  7c0d8e5a1f92  ########------------  Downloading                     |                       |
+|                       |                                                                      |                       |
+|                       |  esc hide (keeps pulling)   x cancel   R retry   J jobs              |                       |
+|                       +----------------------------------------------------------------------+                       |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
++---------------------------------------------------------+  +---------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   v 1 jobs                                
+Local daemon. No accounts. No telemetry.                                                                                
+                                                                                                                        

@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+       =====                                                                    
++------------------------------------------------------------------------------+
+|  IMAGES  6                                                                   |
+|  s+----------------------------------------------------------------------+   |
+|  >|  Tag Image                                                           |   |
+|   |  SOURCE IMAGE                                                        |   |
+|   |    nginx:1.27-alpine                                                 |   |
+|   |                                                                      |   |
+|   |  NEW TAG REFERENCE                                                   |   |
+|   |    [37m> registry.example.com/web:1.27[m [37m                                [m  |   |
+|   |                                                                      |   |
+|   |  COMMAND EQUIVALENT                                                  |   |
+|   |    docker tag nginx:1.27-alpine registry.example.com/web:1.27        |   |
+|   |                                                                      |   |
+|   |  enter tag   esc cancel                                              |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

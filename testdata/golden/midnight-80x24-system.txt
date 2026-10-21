@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+                                          =====                                 
++------------------------------------------------------------------------------+
+|  SYSTEM · DISK USAGE                                                         |
+|  fixture engine · disk usage is synthetic                                    |
+|  LOCAL STORAGE                                                               |
+|  4.4 GB in use · 2.5 GB reclaimable                                          |
+|                                                                              |
+|  ##########################################################################  |
+|                                                                              |
+|  category         count       size    reclaim                                |
+|  images             0/6     1.8 GB     1.8 GB                                |
+|  containers         2/3        0 B        0 B                                |
+|  volumes            3/4     1.9 GB    64.0 MB                                |
+|  build cache          1   700.0 MB   700.0 MB                                |
+|                                                                              |
+|  RECLAIMABLE SHARE                                                           |
+|  0                 25                50                75               100  |
+|  +-----------------+------------------+-----------------+-----------------+  |
++------------------------------------------------------------------------------+
+c cleanup  R refresh  ? help  q quit   v 0 jobs                                 
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

@@ -1,0 +1,60 @@
+@ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                                                        
+                                                 =========                                                                                                                                              
++----------------------------------------------------------------------------------------------------------------------+  +----------------------------------------------------------------------------+
+|  VOLUMES  4                                                                                                          |  |  postgres-data                                                             |
+|  filter —                                                                                                            |  |  local · local                                                             |
+|  > postgres-data                                                                                  1.4 GB 1 refs      |  |  /var/lib/docker/volumes/postgres-data/_data                               |
+|    redis-data                                                                                    96.0 MB 1 refs      |  |                                                                            |
+|    scratch-data                                                                                  64.0 MB 0 refs      |  |  Created 10d ago                                                           |
+|    web-content                                                                                  320.0 MB 1 refs      |  |  1.4 GB on disk                                                            |
+|                                                                                                                      |  |  1 container reference(s)                                                  |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |  USED BY                                                                   |
+|                                                                                                                      |  |  postgres-1  + running                                                     |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |  d remove unused   esc back                                                |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                               +----------------------------------------------------------------------+                                                               |
+|                                                               |  Confirm volume removal                                              |                                                               |
+|                                                               |  REMOVE VOLUME                                                       |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  scratch-data                                                        |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  Volume contents cannot be recovered.                                |                                                               |
+|                                                               |  No force. The daemon refuses removal while a container mounts it.   |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  Type volumes to confirm:                                            |                                                               |
+|                                                               |  [37m> [m [37m                                                               [m  |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  enter remove   esc cancel                                           |                                                               |
+|                                                               +----------------------------------------------------------------------+                                                               |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
+|                                                                                                                      |  |                                                                            |
++----------------------------------------------------------------------------------------------------------------------+  +----------------------------------------------------------------------------+
+d remove unused  / filter  c cleanup  R refresh   v 0 jobs                                                                                                                                              
+Local daemon. No accounts. No telemetry.                                                                                                                                                                
+                                                                                                                                                                                                        

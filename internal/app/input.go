@@ -409,6 +409,11 @@ func (m *Model) overlayKey(msg tea.KeyPressMsg) tea.Cmd {
 			m.overlay = "logs"
 			m.input.Blur()
 			return nil
+		case "registry-search":
+			if m.registryBrowsingTags {
+				m.registryBrowsingTags = false
+				return nil
+			}
 		}
 		m.closeOverlay()
 		return nil

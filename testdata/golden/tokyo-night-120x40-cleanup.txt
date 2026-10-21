@@ -1,0 +1,40 @@
+@ LENGER   Anchor your containers.                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                        
+                                                                        ========                                        
++----------------------------------------------------------------------+  +--------------------------------------------+
+|  SYSTEM · DISK USAGE                                                 |  |  DAEMON & CLEANUP                          |
+|  fixture engine · disk usage is synthetic                            |  |  DAEMON INFORMATION                        |
+|  LOCAL STORAGE                                                       |  |  Daemon telemetry unavailable.             |
+|  4.4 GB in use · 2.5 GB reclaimable                                  |  |                                            |
+|                                                                      |  |  SMART CLEANUP                             |
+|  #####################+----------------------------------------------------------------------+before deletion.       |
+|                       |  Smart cleanup preview                                               |used volumes, contain  |
+|  category           co|  CLEANUP CHECKLIST                                                   |                       |
+|  images               |  Preview exactly what will be removed, then confirm.                 |cklist.                |
+|  containers           |                                                                      |                       |
+|  volumes              |  > [x] dangling-images        0        0 B                           |firmation. No forced   |
+|  build cache          |    [x] unused-images          3     1.2 GB                           |                       |
+|                       |    [x] stopped-containers     1        0 B                           |                       |
+|  RECLAIMABLE SHARE    |    [ ] unused-volumes         1    64.0 MB                           |                       |
+|  0                    |    [x] build-cache            1   700.0 MB                           |                       |
+|  +--------------------|                                                                      |                       |
+|  =====================|  SELECTED                                                            |                       |
+|  58% of used storage i|  dangling-images 0 · unused-images 3 · stopped-containers 1 · build  |                       |
+|                       |    golang:1.23                                                       |                       |
+|                       |    node:22-slim                                                      |                       |
+|                       |    ubuntu:24.04                                                      |                       |
+|                       |    redis-1                                                           |                       |
+|                       |    Build cache                                                       |                       |
+|                       |                                                                      |                       |
+|                       |  space toggle  enter confirm  R reload  esc close                    |                       |
+|                       +----------------------------------------------------------------------+                       |
+|                                                                      |  |                                            |
+|                                                                      |  |                                            |
+|                                                                      |  |                                            |
+|                                                                      |  |                                            |
+|                                                                      |  |                                            |
+|                                                                      |  |                                            |
++----------------------------------------------------------------------+  +--------------------------------------------+
+c cleanup  R refresh  ? help  q quit   v 0 jobs                                                                         
+Local daemon. No accounts. No telemetry.                                                                                
+                                                                                                                        

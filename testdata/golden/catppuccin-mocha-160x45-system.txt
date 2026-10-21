@@ -1,0 +1,45 @@
+@ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                
+                                                                        ========                                                                                
++----------------------------------------------------------------------------------------------+  +------------------------------------------------------------+
+|  SYSTEM · DISK USAGE                                                                         |  |  DAEMON & CLEANUP                                          |
+|  fixture engine · disk usage is synthetic                                                    |  |  DAEMON INFORMATION                                        |
+|  LOCAL STORAGE                                                                               |  |  Daemon telemetry unavailable.                             |
+|  4.4 GB in use · 2.5 GB reclaimable                                                          |  |                                                            |
+|                                                                                              |  |  SMART CLEANUP                                             |
+|  ##########################################################################################  |  |  Preview candidates before deletion.                       |
+|                                                                                              |  |  dangling images, unused volumes, containers               |
+|  category           count       size    reclaim                                              |  |                                                            |
+|  images               0/6     1.8 GB     1.8 GB                                              |  |  Press c to open checklist.                                |
+|  containers           2/3        0 B        0 B                                              |  |                                                            |
+|  volumes              3/4     1.9 GB    64.0 MB                                              |  |  Volumes require confirmation. No forced prunes.           |
+|  build cache            1   700.0 MB   700.0 MB                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|  RECLAIMABLE SHARE                                                                           |  |                                                            |
+|  0                                     25                                    50              |  |                                                            |
+|  +-------------------------------------+--------------------------------------+------------  |  |                                                            |
+|  =========================================================================================:  |  |                                                            |
+|  58% of used storage is currently reclaimable.                                               |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
+|                                                                                              |  |                                                            |
++----------------------------------------------------------------------------------------------+  +------------------------------------------------------------+
+c cleanup  R refresh  ? help  q quit   v 0 jobs                                                                                                                 
+Local daemon. No accounts. No telemetry.                                                                                                                        
+                                                                                                                                                                

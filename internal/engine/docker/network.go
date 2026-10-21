@@ -50,8 +50,7 @@ func (e *Engine) CreateNetwork(ctx context.Context, name, driver string) (string
 		driver = "bridge"
 	}
 	result, err := e.client.NetworkCreate(ctx, name, client.NetworkCreateOptions{
-		Driver:         driver,
-		CheckDuplicate: true,
+		Driver: driver,
 	})
 	if err != nil {
 		return "", fmt.Errorf("create network: %w", err)
@@ -92,32 +91,13 @@ func convertNetworkSummary(n network.Summary) engine.Network {
 	subnets := make([]string, 0, len(n.IPAM.Config))
 	gateways := make([]string, 0, len(n.IPAM.Config))
 	for _, cfg := range n.IPAM.Config {
-		if cfg.Subnet != "" {
-			subnets = append(subnets, cfg.Subnet)
+		if cfg.Subnet.IsValid() {
+			subnets = append(subnets, cfg.Subnet.String())
 		}
-		if cfg.Gateway != "" {
-			gateways = append(gateways, cfg.Gateway)
+		if cfg.Gateway.IsValid() {
+			gateways = append(gateways, cfg.Gateway.String())
 		}
 	}
-	endpoints := make([]engine.NetworkEndpoint, 0, len(n.Containers))
-	for cid, ep := range n.Containers {
-		endpoints = append(endpoints, engine.NetworkEndpoint{
-			ContainerID: cid,
-			Name:        strings.TrimPrefix(ep.Name, "/"),
-			IPv4:        ep.IPv4Address,
-			IPv6:        ep.IPv6Address,
-			MacAddress:  ep.MacAddress,
-		})
-	}
-	slices.SortFunc(endpoints, func(a, b engine.NetworkEndpoint) int {
-		if a.Name < b.Name {
-			return -1
-		}
-		if a.Name > b.Name {
-			return 1
-		}
-		return 0
-	})
 	return engine.Network{
 		ID:         n.ID,
 		Name:       n.Name,
@@ -129,7 +109,6 @@ func convertNetworkSummary(n network.Summary) engine.Network {
 		IPv6:       n.EnableIPv6,
 		Subnets:    subnets,
 		Gateways:   gateways,
-		Containers: endpoints,
 		Labels:     maps.Clone(n.Labels),
 		Created:    n.Created,
 	}
@@ -139,21 +118,28 @@ func convertNetworkInspect(n network.Inspect) engine.Network {
 	subnets := make([]string, 0, len(n.IPAM.Config))
 	gateways := make([]string, 0, len(n.IPAM.Config))
 	for _, cfg := range n.IPAM.Config {
-		if cfg.Subnet != "" {
-			subnets = append(subnets, cfg.Subnet)
+		if cfg.Subnet.IsValid() {
+			subnets = append(subnets, cfg.Subnet.String())
 		}
-		if cfg.Gateway != "" {
-			gateways = append(gateways, cfg.Gateway)
+		if cfg.Gateway.IsValid() {
+			gateways = append(gateways, cfg.Gateway.String())
 		}
 	}
 	endpoints := make([]engine.NetworkEndpoint, 0, len(n.Containers))
 	for cid, ep := range n.Containers {
+		var ipv4, ipv6 string
+		if ep.IPv4Address.IsValid() {
+			ipv4 = ep.IPv4Address.String()
+		}
+		if ep.IPv6Address.IsValid() {
+			ipv6 = ep.IPv6Address.String()
+		}
 		endpoints = append(endpoints, engine.NetworkEndpoint{
 			ContainerID: cid,
 			Name:        strings.TrimPrefix(ep.Name, "/"),
-			IPv4:        ep.IPv4Address,
-			IPv6:        ep.IPv6Address,
-			MacAddress:  ep.MacAddress,
+			IPv4:        ipv4,
+			IPv6:        ipv6,
+			MacAddress:  ep.MacAddress.String(),
 		})
 	}
 	slices.SortFunc(endpoints, func(a, b engine.NetworkEndpoint) int {

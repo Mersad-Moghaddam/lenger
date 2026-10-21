@@ -45,8 +45,8 @@ func TestRunFormBuildsAValidatedSpec(t *testing.T) {
 func TestRunWizardRoutesFieldsWithoutLeakingInput(t *testing.T) {
 	m := fixtureModel(t)
 	m.tab = 1
-	_, cmd := m.Update(tea.KeyPressMsg{Code: 'r', Text: "r"})
-	if cmd == nil || m.overlay != "run" || m.runImage == "" {
+	_, _ = m.Update(tea.KeyPressMsg{Code: 'r', Text: "r"})
+	if m.overlay != "run" || m.runImage == "" {
 		t.Fatal("run key did not open the wizard")
 	}
 	if m.runField != 0 {
@@ -125,12 +125,12 @@ func TestVolumeRemovalRejectsUsedVolumesAndWrongConfirmation(t *testing.T) {
 			break
 		}
 	}
-	_, cmd := m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
-	if cmd == nil || m.overlay != "remove-volume" {
+	_, _ = m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	if m.overlay != "remove-volume" {
 		t.Fatal("unused volume did not open confirmation")
 	}
 	m.input.SetValue("nope")
-	_, cmd = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	_, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if cmd == nil || m.overlay != "remove-volume" {
 		t.Fatal("wrong volume confirmation must not close the dialog")
 	}

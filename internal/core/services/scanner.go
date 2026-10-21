@@ -152,6 +152,9 @@ func parseGrypeOutput(data []byte) (engine.VulnerabilityReport, error) {
 					State string `json:"state"`
 				} `json:"fix"`
 			} `json:"vulnerability"`
+			Fix struct {
+				State string `json:"state"`
+			} `json:"fix"`
 		} `json:"matches"`
 	}
 
@@ -176,7 +179,7 @@ func parseGrypeOutput(data []byte) (engine.VulnerabilityReport, error) {
 		case "LOW":
 			report.Low++
 		}
-		if m.Vulnerability.Fix.State == "fixed" {
+		if m.Vulnerability.Fix.State == "fixed" || m.Fix.State == "fixed" {
 			report.Fixable++
 		}
 	}

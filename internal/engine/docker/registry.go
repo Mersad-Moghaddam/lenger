@@ -24,8 +24,8 @@ func (e *Engine) SearchRegistry(ctx context.Context, query string) ([]engine.Reg
 	if err != nil {
 		return nil, engine.Classify(fmt.Errorf("search registry: %w", err))
 	}
-	out := make([]engine.RegistrySearchResult, 0, len(results))
-	for _, r := range results {
+	out := make([]engine.RegistrySearchResult, 0, len(results.Items))
+	for _, r := range results.Items {
 		out = append(out, engine.RegistrySearchResult{
 			Name:        r.Name,
 			Description: r.Description,
@@ -142,7 +142,7 @@ func listOCITags(ctx context.Context, domain, path string) ([]engine.RemoteTag, 
 // CheckImageUpdate checks remote distribution manifest to compare with local digest (IMG-09).
 func (e *Engine) CheckImageUpdate(ctx context.Context, ref, localDigest string) (engine.ImageUpdateStatus, error) {
 	auth, _ := registryAuth(ctx, ref)
-	dist, err := e.client.DistributionInspect(ctx, ref, auth)
+	dist, err := e.client.DistributionInspect(ctx, ref, client.DistributionInspectOptions{EncodedRegistryAuth: auth})
 	if err != nil {
 		return engine.ImageUpdateStatus{
 			Ref:         ref,

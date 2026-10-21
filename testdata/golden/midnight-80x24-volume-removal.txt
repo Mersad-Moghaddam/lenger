@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+                            =====                                               
++------------------------------------------------------------------------------+
+|  VOLUMES  4                                                                  |
+|  f+----------------------------------------------------------------------+   |
+|  >|  Confirm volume removal                                              |   |
+|   |  REMOVE VOLUME                                                       |   |
+|   |                                                                      |   |
+|   |  scratch-data                                                        |   |
+|   |                                                                      |   |
+|   |  Volume contents cannot be recovered.                                |   |
+|   |  No force. The daemon refuses removal while a container mounts it.   |   |
+|   |                                                                      |   |
+|   |  Type volumes to confirm:                                            |   |
+|   |  [37m> [m [37m                                                               [m  |   |
+|   |                                                                      |   |
+|   |  enter remove   esc cancel                                           |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
++------------------------------------------------------------------------------+
+d remove unused  / filter  c cleanup  R refresh   v 0 jobs                      
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

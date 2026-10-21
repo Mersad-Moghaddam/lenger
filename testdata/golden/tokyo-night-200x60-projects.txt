@@ -1,0 +1,60 @@
+@ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                                                        
+                                     ==========                                                                                                                                                         
++-----------------------------------------------------------------------------------+  +---------------------------------------------------------------------------------------------------------------+
+|  PROJECTS  1                                                                      |  |  COMPOSE PROJECT                                                                                              |
+|  filter —                                                                         |  |  storefront  - partial                                                                                        |
+|  > storefront                                                - partial   3 svcs   |  |                                                                                                               |
+|                                                                                   |  |  DIRECTORY                                                                                                    |
+|                                                                                   |  |  /opt/storefront                                                                                              |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |  CONFIG FILES                                                                                                 |
+|                                                                                   |  |  /opt/storefront/docker-compose.yml                                                                           |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |  SERVICES (3)                                                                                                 |
+|                                                                                   |  |  web            web-1  + running · 8080->80/tcp                                                               |
+|                                                                                   |  |  db             postgres-1  + running · 5432/tcp                                                              |
+|                                                                                   |  |  cache          redis-1  - exited · 6379/tcp                                                                  |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |  u up · d down · r restart · / filter                                                                         |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
+|                                                                                   |  |                                                                                                               |
++-----------------------------------------------------------------------------------+  +---------------------------------------------------------------------------------------------------------------+
+u up  d down  r restart  l stream  / filter  c cleanup  q quit   v 0 jobs                                                                                                                               
+Local daemon. No accounts. No telemetry.                                                                                                                                                                
+                                                                                                                                                                                                        

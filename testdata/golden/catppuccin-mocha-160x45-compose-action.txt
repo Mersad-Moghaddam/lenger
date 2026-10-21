@@ -1,0 +1,45 @@
+@ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                
+                                     ==========                                                                                                                 
++------------------------------------------------------------------+  +----------------------------------------------------------------------------------------+
+|  PROJECTS  1                                                     |  |  COMPOSE PROJECT                                                                       |
+|  filter —                                                        |  |  storefront  - partial                                                                 |
+|  > storefront                               - partial   3 svcs   |  |                                                                                        |
+|                                                                  |  |  DIRECTORY                                                                             |
+|                                                                  |  |  /opt/storefront                                                                       |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |  CONFIG FILES                                                                          |
+|                                                                  |  |  /opt/storefront/docker-compose.yml                                                    |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |  SERVICES (3)                                                                          |
+|                                           +----------------------------------------------------------------------+tcp                                        |
+|                                           |  Compose Project Action                                              |/tcp                                       |
+|                                           |  PROJECT                                                             |                                           |
+|                                           |    storefront                                                        |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  ACTION                                                              |                                           |
+|                                           |    down                                                              |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  OPTIONS                                                             |                                           |
+|                                           |    [x] Remove associated volumes (-v)   (press v to toggle)          |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  COMMAND EQUIVALENT                                                  |                                           |
+|                                           |    docker compose -p storefront down -v                              |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  enter/y confirm   esc/n cancel                                      |                                           |
+|                                           +----------------------------------------------------------------------+                                           |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
+|                                                                  |  |                                                                                        |
++------------------------------------------------------------------+  +----------------------------------------------------------------------------------------+
+u up  d down  r restart  l stream  / filter  c cleanup  q quit   v 0 jobs                                                                                       
+Local daemon. No accounts. No telemetry.                                                                                                                        
+                                                                                                                                                                

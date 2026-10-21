@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binaries
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG_NAME#v}"
+          mkdir -p dist
+
+          targets=(
+            "linux/amd64/lenger_${VERSION}_linux_amd64.tar.gz"
+            "linux/arm64/lenger_${VERSION}_linux_arm64.tar.gz"
+            "linux/arm/v7/lenger_${VERSION}_linux_armv7.tar.gz"
+            "darwin/amd64/lenger_${VERSION}_darwin_amd64.tar.gz"
+            "darwin/arm64/lenger_${VERSION}_darwin_arm64.tar.gz"
+          )
+
+          for target in "${targets[@]}"; do
+            IFS="/" read -r os arch rest <<< "$target"
+            if [ "$arch" = "arm" ]; then
+              IFS="/" read -r os arch armver filename <<< "$target"
+              export GOARM="${armver#v}"
+            else
+              filename="$rest"
+              unset GOARM
+            fi
+
+            echo "Building $os/$arch -> $filename"
+            build_dir="build_${os}_${arch}"
+            mkdir -p "$build_dir"
+
+            GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 go build \
+              -trimpath \
+              -ldflags="-s -w -X main.version=$VERSION" \
+              -o "$build_dir/lenger" ./cmd/lenger
+
+            cp packaging/lenger.desktop "$build_dir/"
+            cp README.md "$build_dir/"
+            [ -f LICENSE ] && cp LICENSE "$build_dir/"
+
+            tar -czvf "dist/$filename" -C "$build_dir" .
+            rm -rf "$build_dir"
+          done
+
+          cd dist
+          sha256sum lenger_* > SHA256SUMS
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

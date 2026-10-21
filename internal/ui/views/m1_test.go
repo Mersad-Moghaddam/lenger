@@ -43,14 +43,14 @@ func TestContainerDetailMasksAndOffersSanitizedJSON(t *testing.T) {
 	}}
 	cpu := map[string]float64{item.ID: 18.4}
 	history := map[string][]float64{item.ID: {12, 14, 18, 16, 20, 18.4}}
-	text := Containers(plainSheet(), []engine.Container{item}, 0, nil, "", inspect, true, false, stats, cpu, history, 80, 24, now)
+	text := Containers(plainSheet(), []engine.Container{item}, 0, nil, "", inspect, true, false, stats, cpu, history, 80, 32, now)
 	if !strings.Contains(text, "ENVIRONMENT (MASKED)") || !strings.Contains(text, "TOKEN=••••") {
 		t.Fatalf("structured inspection did not expose masked metadata:\n%s", text)
 	}
 	if !strings.Contains(text, "RESOURCES") || !strings.Contains(text, "CPU:  18.4%") {
 		t.Fatalf("structured inspection did not expose measured resources:\n%s", text)
 	}
-	raw := Containers(plainSheet(), []engine.Container{item}, 0, nil, "", inspect, true, true, stats, cpu, history, 80, 24, now)
+	raw := Containers(plainSheet(), []engine.Container{item}, 0, nil, "", inspect, true, true, stats, cpu, history, 80, 50, now)
 	if !strings.Contains(raw, "SANITIZED JSON") || !strings.Contains(raw, "TOKEN=••••") {
 		t.Fatalf("sanitized JSON view is incomplete:\n%s", raw)
 	}

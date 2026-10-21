@@ -45,8 +45,8 @@ func TestIdleUpdateSchedulesNoTick(t *testing.T) {
 }
 func TestReducedTabSwitchNoTick(t *testing.T) {
 	m := fixtureModel(t)
-	_, cmd := m.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
-	if cmd != nil || m.tab != 2 {
+	_, cmd := m.Update(tea.KeyPressMsg{Code: '4', Text: "4"})
+	if cmd != nil || m.tab != 3 {
 		t.Fatal("reduced navigation scheduled animation or failed")
 	}
 }

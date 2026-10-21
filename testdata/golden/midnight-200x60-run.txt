@@ -1,0 +1,60 @@
+@ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                                                        
+             ========                                                                                                                                                                                   
++----------------------------------------------------------------+  +--------------------------------------------------------------+  +----------------------------------------------------------------+
+|  IMAGES  6                                                     |  |  golang:1.23                                                 |  |  IMAGE ACTIVITY                                                |
+|  sort name  /                                                  |  |  000000000000  843.0 MB                                      |  |  Live container stats arrive in M2.                            |
+|  > golang:1.23                 843.0 MB unused  4d ago         |  |  4d ago                                                      |  |                                                                |
+|    nginx:1.27-alpine            48.0 MB in use  1d ago         |  |                                                              |  |  No synthetic live data is shown.                              |
+|    node:22-slim                241.0 MB unused  5d ago         |  |  Press i or Enter to load inspection and layers.             |  |                                                                |
+|    postgres:16                 432.0 MB in use  2d ago         |  |                                                              |  |                                                                |
+|    redis:7.4                   117.0 MB in use  3d ago         |  |  USED BY                                                     |  |                                                                |
+|    ubuntu:24.04                 78.0 MB unused  6d ago         |  |  No containers reference this image.                         |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |  [U] Check update  [S] Registry search  [t] Tag  [P] Push    |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                               +----------------------------------------------------------------------+                                                               |
+|                                                               |  Run image                                                           |                                                               |
+|                                                               |  IMAGE                                                               |                                                               |
+|                                                               |    nginx:1.27-alpine                                                 |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  > name       [37m>  [mlenger-web                                    |                                                               |
+|                                                               |    ports     8080:80                                                 |                                                               |
+|                                                               |    env       APP_ENV=production                                      |                                                               |
+|                                                               |    volumes   —                                                       |                                                               |
+|                                                               |    restart   unless-stopped                                          |                                                               |
+|                                                               |    network   —                                                       |                                                               |
+|                                                               |    command   —                                                       |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  EQUIVALENT COMMAND                                                  |                                                               |
+|                                                               |  docker run -d --name lenger-web -p 8080:80 -e APP_ENV=production -  |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  tab/↑↓ field   ←/→ restart   enter run   esc cancel                 |                                                               |
+|                                                               |  The preview is generated from this form; no shell is involved.      |                                                               |
+|                                                               +----------------------------------------------------------------------+                                                               |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
+|                                                                |  |                                                              |  |                                                                |
++----------------------------------------------------------------+  +--------------------------------------------------------------+  +----------------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   v 0 jobs                                                                                                                
+Local daemon. No accounts. No telemetry.                                                                                                                                                                
+                                                                                                                                                                                                        

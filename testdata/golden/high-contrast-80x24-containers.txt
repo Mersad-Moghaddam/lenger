@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+              =====                                                             
++------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                               |
+|  filter —                                                                    |
+|  > postgres-1               + running postgres:16                            |
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · up 1d 0h      |
+|    redis-1                  - exited redis:7.4                               |
+|    cpu —  mem —  storefront · 6379/tcp                                       |
+|    web-1                    + running nginx:1.27-alpine                      |
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp · up 3h 0m   |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filt
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

@@ -17,7 +17,7 @@ func CleanLayerCommand(cmd string) string {
 	c = strings.TrimPrefix(c, "/bin/sh -c #(nop) ")
 	c = strings.TrimPrefix(c, "/bin/sh -c ")
 	c = strings.TrimPrefix(c, "#(nop) ")
-	return style.Clean(c)
+	return style.Clean(strings.TrimSpace(c))
 }
 
 // LayerBreakdown renders the visual layer sounding and highlights the biggest layer (IMG-07).

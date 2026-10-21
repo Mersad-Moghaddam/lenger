@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+       =====                                                                    
++------------------------------------------------------------------------------+
+|  IMAGES  6                                                                   |
+|  s+----------------------------------------------------------------------+   |
+|  >|  Registry Search & Tag Browser                                       |   |
+|   |  REGISTRY SEARCH  [Docker Hub / GHCR / Quay]                         |   |
+|   |                                                                      |   |
+|   |  Search: [37m> nginx[m [37m                                                  [m  |   |
+|   |                                                                      |   |
+|   |  > nginx                    ★ 20.1k [OFFICIAL]                       |   |
+|   |      Official build of Nginx.                                        |   |
+|   |    bitnami/nginx              ★ 430 [AUTO]                           |   |
+|   |      Bitnami container image for NGINX.                              |   |
+|   |                                                                      |   |
+|   |  ↑↓ select   t view tags   enter pull latest   / search   esc close  |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

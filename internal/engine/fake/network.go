@@ -79,7 +79,7 @@ func (e *Engine) CreateNetwork(ctx context.Context, name, driver string) (string
 		Created:    time.Now().UTC(),
 	}
 	e.networks = append(e.networks, net)
-	e.broadcast(engine.Event{Kind: "network", Action: "create", ID: newID, At: time.Now().UTC()})
+	e.broadcastLocked(engine.Event{Kind: "network", Action: "create", ID: newID, At: time.Now().UTC()})
 	return newID, nil
 }
 
@@ -99,7 +99,7 @@ func (e *Engine) RemoveNetwork(ctx context.Context, id string) error {
 	}
 	removed := e.networks[idx]
 	e.networks = slices.Delete(e.networks, idx, idx+1)
-	e.broadcast(engine.Event{Kind: "network", Action: "destroy", ID: removed.ID, At: time.Now().UTC()})
+	e.broadcastLocked(engine.Event{Kind: "network", Action: "destroy", ID: removed.ID, At: time.Now().UTC()})
 	return nil
 }
 
@@ -131,7 +131,7 @@ func (e *Engine) ConnectNetwork(ctx context.Context, netID, containerID string) 
 		Name:        container.Name,
 		IPv4:        ip,
 	})
-	e.broadcast(engine.Event{Kind: "network", Action: "connect", ID: targetNet.ID, At: time.Now().UTC()})
+	e.broadcastLocked(engine.Event{Kind: "network", Action: "connect", ID: targetNet.ID, At: time.Now().UTC()})
 	return nil
 }
 
@@ -157,7 +157,7 @@ func (e *Engine) DisconnectNetwork(ctx context.Context, netID, containerID strin
 		return fmt.Errorf("container %s is not connected to network %s", containerID, targetNet.Name)
 	}
 	targetNet.Containers = slices.Delete(targetNet.Containers, epIdx, epIdx+1)
-	e.broadcast(engine.Event{Kind: "network", Action: "disconnect", ID: targetNet.ID, At: time.Now().UTC()})
+	e.broadcastLocked(engine.Event{Kind: "network", Action: "disconnect", ID: targetNet.ID, At: time.Now().UTC()})
 	return nil
 }
 

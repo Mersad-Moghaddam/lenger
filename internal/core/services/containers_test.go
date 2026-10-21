@@ -87,7 +87,7 @@ func TestRunRejectsUnsafeOrInvalidForms(t *testing.T) {
 		{"bad name", engine.RunSpec{Image: "redis:7", Name: "bad name"}},
 		{"bad port", engine.RunSpec{Image: "redis:7", Ports: []string{"70000:6379"}}},
 		{"bad env", engine.RunSpec{Image: "redis:7", Env: []string{"NO_EQUALS"}}},
-		{"bad mount", engine.RunSpec{Image: "redis:7", Volumes: []string{"relative:/data"}}},
+		{"bad mount", engine.RunSpec{Image: "redis:7", Volumes: []string{"./relative:/data"}}},
 		{"bad restart", engine.RunSpec{Image: "redis:7", Restart: "sometimes"}},
 		{"bad network", engine.RunSpec{Image: "redis:7", Network: "bad network"}},
 	} {

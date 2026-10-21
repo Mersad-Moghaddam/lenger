@@ -19,7 +19,7 @@ func TestRegistrySearchOverlayAndNavigation(t *testing.T) {
 		t.Fatalf("expected registry-search overlay, got %s", m.overlay)
 	}
 
-	view := m.View()
+	view := m.Render()
 	if !strings.Contains(view, "REGISTRY SEARCH") {
 		t.Fatalf("expected search header in view: %s", view)
 	}
@@ -31,7 +31,7 @@ func TestRegistrySearchOverlayAndNavigation(t *testing.T) {
 	}
 	_, _ = m.Update(registrySearchMsg{query: "nginx", results: results})
 
-	view = m.View()
+	view = m.Render()
 	if !strings.Contains(view, "nginx") || !strings.Contains(view, "OFFICIAL") {
 		t.Fatalf("expected nginx and OFFICIAL badge in view: %s", view)
 	}
@@ -46,7 +46,7 @@ func TestRegistrySearchOverlayAndNavigation(t *testing.T) {
 	}
 	_, _ = m.Update(remoteTagsMsg{repo: "nginx", tags: tags})
 
-	view = m.View()
+	view = m.Render()
 	if !strings.Contains(view, "TAGS FOR nginx") || !strings.Contains(view, "1.27-alpine") {
 		t.Fatalf("expected remote tags view: %s", view)
 	}
@@ -79,8 +79,8 @@ func TestTagAndPushImageWorkflows(t *testing.T) {
 	if m.overlay != "tag-image" {
 		t.Fatalf("expected tag-image overlay, got %s", m.overlay)
 	}
-	if !strings.Contains(m.View(), "TAG IMAGE") {
-		t.Fatalf("expected TAG IMAGE header in view: %s", m.View())
+	if !strings.Contains(m.Render(), "Tag Image") {
+		t.Fatalf("expected Tag Image header in view: %s", m.Render())
 	}
 
 	// Simulate tag success
@@ -97,8 +97,8 @@ func TestTagAndPushImageWorkflows(t *testing.T) {
 
 	// Deliver push progress
 	_, _ = m.Update(pushProgressMsg{progress: engine.Progress{ID: "layer-1", Status: "Pushing", Current: 50, Total: 100}})
-	if !strings.Contains(m.View(), "PUSH IMAGE TO REGISTRY") {
-		t.Fatalf("expected push view: %s", m.View())
+	if !strings.Contains(m.Render(), "PUSH IMAGE TO REGISTRY") {
+		t.Fatalf("expected push view: %s", m.Render())
 	}
 
 	// Deliver push done
@@ -117,8 +117,8 @@ func TestExportAndImportTarballWorkflows(t *testing.T) {
 	if m.overlay != "export-image" {
 		t.Fatalf("expected export-image overlay, got %s", m.overlay)
 	}
-	if !strings.Contains(m.View(), "EXPORT IMAGE ARCHIVE") {
-		t.Fatalf("expected export view: %s", m.View())
+	if !strings.Contains(m.Render(), "EXPORT IMAGE ARCHIVE") {
+		t.Fatalf("expected export view: %s", m.Render())
 	}
 
 	// Cancel export
@@ -132,8 +132,8 @@ func TestExportAndImportTarballWorkflows(t *testing.T) {
 	if m.overlay != "import-image" {
 		t.Fatalf("expected import-image overlay, got %s", m.overlay)
 	}
-	if !strings.Contains(m.View(), "IMPORT IMAGE ARCHIVE") {
-		t.Fatalf("expected import view: %s", m.View())
+	if !strings.Contains(m.Render(), "IMPORT IMAGE ARCHIVE") {
+		t.Fatalf("expected import view: %s", m.Render())
 	}
 }
 
@@ -151,7 +151,7 @@ func TestDaemonMirrorsDiffOverlay(t *testing.T) {
 	if m.overlay != "daemon-mirrors" {
 		t.Fatalf("expected daemon-mirrors overlay, got %s", m.overlay)
 	}
-	view := m.View()
+	view := m.Render()
 	if !strings.Contains(view, "DAEMON REGISTRY MIRRORS CONFIGURATION") {
 		t.Fatalf("expected daemon mirrors header: %s", view)
 	}

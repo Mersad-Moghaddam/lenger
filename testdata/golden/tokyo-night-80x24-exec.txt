@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+              =====                                                             
++------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                               |
+|  f+----------------------------------------------------------------------+   |
+|  >|  Exec shell                                                          |   |
+|   |  EXEC SHELL                                                          |   |
+|   |  web-1                                                               |   |
+|   |                                                                      |   |
+|   |  The TUI suspends while docker exec runs; it restores on exit.       |   |
+|   |                                                                      |   |
+|   |  > sh                                                                |   |
+|   |    bash                                                              |   |
+|   |    ash                                                               |   |
+|   |                                                                      |   |
+|   |  j/k choose   enter run   esc cancel                                 |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filt
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

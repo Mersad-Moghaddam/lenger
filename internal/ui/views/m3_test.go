@@ -45,9 +45,9 @@ func TestCleanLayerCommand(t *testing.T) {
 func TestLayerBreakdown(t *testing.T) {
 	s := testSheet()
 	layers := []engine.Layer{
-		{ID: "layer1", Command: "FROM alpine", Size: 5 * 1024 * 1024},
-		{ID: "layer2", Command: "RUN apk add --no-cache curl", Size: 12 * 1024 * 1024},
-		{ID: "layer3", Command: "COPY app /app", Size: 45 * 1024 * 1024},
+		{ID: "layer1", Command: "FROM alpine", Size: 5_000_000},
+		{ID: "layer2", Command: "RUN apk add --no-cache curl", Size: 12_000_000},
+		{ID: "layer3", Command: "COPY app /app", Size: 45_000_000},
 		{ID: "layer4", Command: "CMD /app", Size: 0},
 	}
 

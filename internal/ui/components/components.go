@@ -46,7 +46,7 @@ func Pill(s style.Sheet, state string) string {
 	g := tokens.Icons(s.ASCII)
 	icon, role := g.Stopped, s.Palette.Muted
 	switch state {
-	case "running", "succeeded":
+	case "running", "succeeded", "healthy":
 		icon, role = g.Running, s.Palette.Success
 	case "paused":
 		icon, role = g.Paused, s.Palette.Warning
@@ -106,8 +106,11 @@ func Bytes(size int64) string {
 // Age renders deterministic ages relative to a caller-provided clock.
 func Age(created, now time.Time) string {
 	d := now.Sub(created)
-	if d < time.Minute {
+	if d < time.Second {
 		return "just now"
+	}
+	if d < time.Minute {
+		return fmt.Sprintf("%ds ago", int(d.Seconds()))
 	}
 	if d < time.Hour {
 		return fmt.Sprintf("%dm ago", int(d.Minutes()))

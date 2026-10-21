@@ -1,7 +1,9 @@
 name: CI
-# Kept manual during the explicitly coding-only stage. Enable push/PR triggers
-# after dependencies and reviewed visual baselines have been established.
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read

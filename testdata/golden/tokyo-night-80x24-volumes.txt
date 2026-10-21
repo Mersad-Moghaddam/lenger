@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+                            =====                                               
++------------------------------------------------------------------------------+
+|  VOLUMES  4                                                                  |
+|  filter —                                                                    |
+|  > postgres-data                                          1.4 GB 1 refs      |
+|    redis-data                                            96.0 MB 1 refs      |
+|    scratch-data                                          64.0 MB 0 refs      |
+|    web-content                                          320.0 MB 1 refs      |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+d remove unused  / filter  c cleanup  R refresh   v 0 jobs                      
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

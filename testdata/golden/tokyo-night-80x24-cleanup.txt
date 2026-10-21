@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+    +----------------------------------------------------------------------+    
++---|  Smart cleanup preview                                               |---+
+|  S|  CLEANUP CHECKLIST                                                   |   |
+|  f|  Preview exactly what will be removed, then confirm.                 |   |
+|  L|                                                                      |   |
+|  4|  > [x] dangling-images        0        0 B                           |   |
+|   |    [x] unused-images          3     1.2 GB                           |   |
+|  #|    [x] stopped-containers     1        0 B                           |#  |
+|   |    [ ] unused-volumes         1    64.0 MB                           |   |
+|  c|    [x] build-cache            1   700.0 MB                           |   |
+|  i|                                                                      |   |
+|  c|  SELECTED                                                            |   |
+|  v|  dangling-images 0 · unused-images 3 · stopped-containers 1 · build  |   |
+|  b|    golang:1.23                                                       |   |
+|   |    node:22-slim                                                      |   |
+|  R|    ubuntu:24.04                                                      |   |
+|  0|  … 2 more                                                            |0  |
+|  +|                                                                      |+  |
++---|  space toggle  enter confirm  R reload  esc close                    |---+
+c cl+----------------------------------------------------------------------+    
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

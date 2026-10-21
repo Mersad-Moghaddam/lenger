@@ -1,0 +1,60 @@
+@ LENGER   Anchor your containers.                                                                                                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                                                        
+                       ============                                                                                                                                                                     
++------------------------------------------------------------------------------+  +--------------------------------------------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                               |  |  postgres-1                                                                                                        |
+|  filter —                                                                    |  |  db1  + running                                                                                                    |
+|  > postgres-1               + running postgres:16                            |  |  postgres:16                                                                                                       |
+|    cpu  7.1% ++++*#*+*+  mem 512.0 MB  storefront · 5432/tcp · up 1d 0h      |  |                                                                                                                    |
+|    redis-1                  - exited redis:7.4                               |  |  RESOURCES                                                                                                         |
+|    cpu —  mem —  storefront · 6379/tcp                                       |  |  CPU:   7.1%  +++*++**+##*++*++*                                                                                   |
+|    web-1                    + running nginx:1.27-alpine                      |  |  Memory: 512.0 MB / 1.0 GB                                                                                         |
+|    cpu 18.4% +*+*+*+*+*  mem 96.0 MB  storefront · 8080->80/tcp · up 3h 0m   |  |  Network: rx 256.0 MB · tx 85.3 MB                                                                                 |
+|                                                                              |  |  Block I/O: r 64.0 MB · w 32.0 MB                                                                                  |
+|                                                                              |  |  PIDs: 9                                                                                                           |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |  Press i or Enter to load inspection.                                                                              |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |  PROJECT                                                                                                           |
+|                                                                              |  |  storefront / db                                                                                                   |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                               +----------------------------------------------------------------------+                                                               |
+|                                                               |  Confirm container action                                            |                                                               |
+|                                                               |  REMOVE                                                              |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  web-1  + running                                                    |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  No force. Running containers must be stopped first.                 |                                                               |
+|                                                               |  Named and anonymous volumes are preserved.                          |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  EQUIVALENT COMMAND                                                  |                                                               |
+|                                                               |  docker rm web1                                                      |                                                               |
+|                                                               |                                                                      |                                                               |
+|                                                               |  y confirm   n / esc cancel                                          |                                                               |
+|                                                               +----------------------------------------------------------------------+                                                               |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
+|                                                                              |  |                                                                                                                    |
++------------------------------------------------------------------------------+  +--------------------------------------------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filter  c cleanup   v 0 jobs                                                                                                
+Local daemon. No accounts. No telemetry.                                                                                                                                                                
+                                                                                                                                                                                                        

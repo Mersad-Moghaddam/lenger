@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+                                   =====                                        
++------------------------------------------------------------------------------+
+|  NETWORKS  4                                                                 |
+|  f+----------------------------------------------------------------------+   |
+|  >|  Confirm Network Removal                                             |   |
+|   |  TARGET NETWORK                                                      |   |
+|   |    bridge-id                                                         |   |
+|   |                                                                      |   |
+|   |  SAFETY CHECK                                                        |   |
+|   |    Active containers must be disconnected before network removal.    |   |
+|   |                                                                      |   |
+|   |  COMMAND EQUIVALENT                                                  |   |
+|   |    docker network rm bridge-id                                       |   |
+|   |                                                                      |   |
+|   |  enter/y remove   esc/n cancel                                       |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+c create  d remove  / filter  R refresh  q quit   v 0 jobs                      
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

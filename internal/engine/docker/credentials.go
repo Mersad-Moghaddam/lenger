@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -50,7 +51,11 @@ func registryAuth(ctx context.Context, ref string) (string, error) {
 		return "", err
 	}
 	auth.ServerAddress = server
-	return registry.EncodeAuthConfig(auth)
+	buf, err := json.Marshal(auth)
+	if err != nil {
+		return "", fmt.Errorf("encode auth config: %w", err)
+	}
+	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
 func helperAuth(ctx context.Context, helper, server string) (registry.AuthConfig, error) {

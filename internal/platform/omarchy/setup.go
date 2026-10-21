@@ -31,7 +31,9 @@ func FindBindingsConfig() string {
 		return ""
 	}
 	candidates := []string{
+		filepath.Join(home, ".config", "hypr", "bindings.lua"),
 		filepath.Join(home, ".config", "hypr", "bindings.conf"),
+		filepath.Join(home, ".config", "hypr", "hyprland.lua"),
 		filepath.Join(home, ".config", "hypr", "hyprland.conf"),
 		filepath.Join(home, ".config", "omarchy", "hypr", "bindings.conf"),
 	}
@@ -48,7 +50,11 @@ func Setup(apply bool) string {
 	terminal := DetectTerminal()
 	configFile := FindBindingsConfig()
 
+	isLua := strings.HasSuffix(configFile, ".lua")
 	bindingLine := fmt.Sprintf("bind = $mainMod ALT, D, exec, %s -e lenger", terminal)
+	if isLua {
+		bindingLine = fmt.Sprintf("o.bind(\"SUPER + ALT + D\", \"Lenger\", \"%s -e lenger\")", terminal)
+	}
 
 	var sb strings.Builder
 	sb.WriteString("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
@@ -63,9 +69,9 @@ func Setup(apply bool) string {
 				sb.WriteString(fmt.Sprintf("✓ Lenger is already configured in %s\n", configFile))
 				return sb.String()
 			}
-			if strings.Contains(content, "$mainMod SHIFT, D") {
-				sb.WriteString("ℹ lazydocker is bound to $mainMod SHIFT, D\n")
-				sb.WriteString("  Using non-conflicting binding: $mainMod ALT, D (Super+Alt+D)\n\n")
+			if strings.Contains(content, "$mainMod SHIFT, D") || strings.Contains(content, "SUPER + SHIFT + D") {
+				sb.WriteString("ℹ lazydocker is bound to Super+Shift+D\n")
+				sb.WriteString("  Using non-conflicting binding: Super+Alt+D\n\n")
 			}
 		}
 	}
@@ -80,7 +86,11 @@ func Setup(apply bool) string {
 		}
 		defer f.Close()
 
-		addition := fmt.Sprintf("\n# Lenger Docker TUI\n%s\n", bindingLine)
+		comment := "#"
+		if isLua {
+			comment = "--"
+		}
+		addition := fmt.Sprintf("\n%s Lenger Docker TUI\n%s\n", comment, bindingLine)
 		if _, err := f.WriteString(addition); err != nil {
 			sb.WriteString(fmt.Sprintf("✗ Failed to write to %s: %v\n", configFile, err))
 			return sb.String()

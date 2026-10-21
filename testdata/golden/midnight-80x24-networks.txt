@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+                                   =====                                        
++------------------------------------------------------------------------------+
+|  NETWORKS  4                                                                 |
+|  filter —                                                                    |
+|  > bridge                                           bridge   2 endpoints     |
+|    host                                             host     0 endpoints     |
+|    none                                             null     0 endpoints     |
+|    storefront_default                               bridge   3 endpoints     |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
+|                                                                              |
++------------------------------------------------------------------------------+
+c create  d remove  / filter  R refresh  q quit   v 0 jobs                      
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

@@ -1,0 +1,45 @@
+@ LENGER   Anchor your containers.                                                                                                    - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                                                                
+             ========                                                                                                                                           
++-----------------------------------------------------------------------------+  +-----------------------------------------------------------------------------+
+|  IMAGES  6                                                                  |  |  golang:1.23                                                                |
+|  sort name  /                                                               |  |  000000000000  843.0 MB                                                     |
+|  > golang:1.23                              843.0 MB unused  4d ago         |  |  4d ago                                                                     |
+|    nginx:1.27-alpine                         48.0 MB in use  1d ago         |  |                                                                             |
+|    node:22-slim                             241.0 MB unused  5d ago         |  |  Press i or Enter to load inspection and layers.                            |
+|    postgres:16                              432.0 MB in use  2d ago         |  |                                                                             |
+|    redis:7.4                                117.0 MB in use  3d ago         |  |  USED BY                                                                    |
+|    ubuntu:24.04                              78.0 MB unused  6d ago         |  |  No containers reference this image.                                        |
+|                                                                             |  |                                                                             |
+|                                                                             |  |  [U] Check update  [S] Registry search  [t] Tag  [P] Push  [E] Export       |
+|                                           +----------------------------------------------------------------------+                                           |
+|                                           |  Registry Mirrors Configuration                                      |                                           |
+|                                           |  DAEMON REGISTRY MIRRORS CONFIGURATION (/etc/docker/daemon.json)     |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  PROPOSED CONFIG DIFF                                                |                                           |
+|                                           |  --- /etc/docker/daemon.json                                         |                                           |
+|                                           |  +++ /etc/docker/daemon.json                                         |                                           |
+|                                           |  +   "registry-mirrors": ["https://mirror.gcr.io"]                   |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  SHELL COMMAND TO APPLY                                              |                                           |
+|                                           |    echo '{"registry-mirrors": ["https://mirror.gcr.io"]}' | sudo te  |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  Lenger does not overwrite /etc/docker/daemon.json without root con  |                                           |
+|                                           |  Execute the command above, then reload the Docker daemon.           |                                           |
+|                                           |                                                                      |                                           |
+|                                           |  esc close                                                           |                                           |
+|                                           +----------------------------------------------------------------------+                                           |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
+|                                                                             |  |                                                                             |
++-----------------------------------------------------------------------------+  +-----------------------------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   v 0 jobs                                                                        
+Local daemon. No accounts. No telemetry.                                                                                                                        
+                                                                                                                                                                

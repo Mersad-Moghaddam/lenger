@@ -1,0 +1,40 @@
+@ LENGER   Anchor your containers.                                                            - fixture engine · offline
+1 Dashboard  2 Images  3 Containers  4 Projects  5 Volumes  6 Networks  7 System                                        
+             ========                                                                                                   
++---------------------------------------------------------+  +---------------------------------------------------------+
+|  IMAGES  6                                              |  |  golang:1.23                                            |
+|  sort name  /                                           |  |  000000000000  843.0 MB                                 |
+|  > golang:1.23          843.0 MB unused                 |  |  4d ago                                                 |
+|    nginx:1.27-alpine     48.0 MB in use                 |  |                                                         |
+|    node:22-slim         241.0 MB unused                 |  |  Press i or Enter to load inspection and layers.        |
+|    postgres:16          432.0 MB in use                 |  |                                                         |
+|    redis:7.4          +----------------------------------------------------------------------+                       |
+|    ubuntu:24.04       |  Run image                                                           |ge.                    |
+|                       |  IMAGE                                                               |                       |
+|                       |    nginx:1.27-alpine                                                 |earch  [t] Tag  [P] P  |
+|                       |                                                                      |                       |
+|                       |  > name       [37m>  [mlenger-web                                    |                       |
+|                       |    ports     8080:80                                                 |                       |
+|                       |    env       APP_ENV=production                                      |                       |
+|                       |    volumes   —                                                       |                       |
+|                       |    restart   unless-stopped                                          |                       |
+|                       |    network   —                                                       |                       |
+|                       |    command   —                                                       |                       |
+|                       |                                                                      |                       |
+|                       |  EQUIVALENT COMMAND                                                  |                       |
+|                       |  docker run -d --name lenger-web -p 8080:80 -e APP_ENV=production -  |                       |
+|                       |                                                                      |                       |
+|                       |  tab/↑↓ field   ←/→ restart   enter run   esc cancel                 |                       |
+|                       |  The preview is generated from this form; no shell is involved.      |                       |
+|                       +----------------------------------------------------------------------+                       |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
+|                                                         |  |                                                         |
++---------------------------------------------------------+  +---------------------------------------------------------+
+p pull  r run  i inspect  d remove  o sort  / filter  space select  c cleanup   v 0 jobs                                
+Local daemon. No accounts. No telemetry.                                                                                
+                                                                                                                        

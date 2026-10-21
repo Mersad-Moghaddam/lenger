@@ -1,0 +1,24 @@
+@ LENGER   Anchor your containers.                    - fixture engine · offline
+1 Das  2 Ima  3 Con  4 Pro  5 Vol  6 Net  7 Sys                                 
+              =====                                                             
++------------------------------------------------------------------------------+
+|  CONTAINERS  3                                                               |
+|  f+----------------------------------------------------------------------+   |
+|  >|  Confirm container action                                            |   |
+|   |  REMOVE                                                              |   |
+|   |                                                                      |   |
+|   |  web-1  + running                                                    |   |
+|   |                                                                      |   |
+|   |  No force. Running containers must be stopped first.                 |   |
+|   |  Named and anonymous volumes are preserved.                          |   |
+|   |                                                                      |   |
+|   |  EQUIVALENT COMMAND                                                  |   |
+|   |  docker rm web1                                                      |   |
+|   |                                                                      |   |
+|   |  y confirm   n / esc cancel                                          |   |
+|   +----------------------------------------------------------------------+   |
+|                                                                              |
++------------------------------------------------------------------------------+
+x start  s stop  r restart  p pause  d remove  l logs  e exec  i inspect  / filt
+Local daemon. No accounts. No telemetry.                                        
+                                                                                

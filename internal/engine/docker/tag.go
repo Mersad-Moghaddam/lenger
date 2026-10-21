@@ -13,7 +13,7 @@ import (
 
 // TagImage tags a local image with a new target reference (IMG-08).
 func (e *Engine) TagImage(ctx context.Context, sourceID, targetRef string) error {
-	if _, err := e.client.ImageTag(ctx, sourceID, targetRef, client.ImageTagOptions{}); err != nil {
+	if _, err := e.client.ImageTag(ctx, client.ImageTagOptions{Source: sourceID, Target: targetRef}); err != nil {
 		return fmt.Errorf("tag image: %w", err)
 	}
 	return nil
@@ -61,11 +61,11 @@ func (e *Engine) LoadImage(ctx context.Context, sourceFile string) error {
 	}
 	defer f.Close()
 
-	res, err := e.client.ImageLoad(ctx, f, client.ImageLoadOptions{})
+	res, err := e.client.ImageLoad(ctx, f)
 	if err != nil {
 		return fmt.Errorf("import image: %w", err)
 	}
-	defer res.Body.Close() //nolint:errcheck
-	_, _ = io.Copy(io.Discard, res.Body)
+	defer res.Close() //nolint:errcheck
+	_, _ = io.Copy(io.Discard, res)
 	return nil
 }
